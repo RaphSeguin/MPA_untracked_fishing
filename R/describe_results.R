@@ -36,54 +36,58 @@ describe_results <- function(SAR_stats){
     length(unique(MPA_data$id_iucn))/length(unique(mpa_wdpa$id_iucn))
     
     #As well as ratio surface wise
-    sum(MPA_data$gis_m_area)/sum(mpa_wdpa$area_correct)
+    surface_mpas <- sum((MPA_union %>%
+      mutate(mpa_area = as.numeric(set_units(st_area(MPA_union %>% st_as_sf()),km^2))))$mpa_area)
     
     #For each IUCN category was it highest ?
     iucn_cats <- MPA_data %>%
       group_by(iucn_cat) %>%
-      reframe(sum_all_median = median(sum_all),
-              sum_all_IQR = IQR(sum_all),
-              relative_sum_all_median = median(relative_sum_all),
-              relative_sum_all_IQR = IQR(relative_sum_all),
-              unmatched_fishing_median = median(unmatched_fishing),
-              unmatched_fishing_IQR = IQR(unmatched_fishing),
-              unmatched_relative_median = median(unmatched_relative),
-              unmatched_relative_IQR = IQR(unmatched_relative),
+      reframe(sum_all_median = mean(sum_all),
+              sum_all_IQR = sd(sum_all),
+              relative_sum_all_median = mean(relative_sum_all),
+              relative_sum_all_IQR = sd(relative_sum_all),
+              unmatched_fishing_median = mean(unmatched_fishing),
+              unmatched_fishing_IQR = sd(unmatched_fishing),
+              unmatched_relative_median = mean(unmatched_relative),
+              unmatched_relative_IQR = sd(unmatched_relative),
               unmatched_ratio_mean = mean(unmatched_ratio),
               unmatched_ratio_sd = sd(unmatched_ratio),
-              unmatched_ratio_median = median(unmatched_ratio),
-              unmatched_ratio_IQR = IQR(unmatched_ratio)) %>%
+              unmatched_ratio_median = mean(unmatched_ratio),
+              unmatched_ratio_IQR = sd(unmatched_ratio)) %>%
       ungroup()
+    
+    format_power(sd(MPA_data$relative_sum_all), set_power = -3)
     
     #Density in MPAs
     range(MPA_data$relative_sum_all)
-    median(MPA_data$relative_sum_all)
-    IQR(MPA_data$relative_sum_all)
-    
+    mean(MPA_data$relative_sum_all)
+    sd(MPA_data$relative_sum_all)
+        
     #DEnsity outside MPas
     range(SAR_eez_final$relative_sum_all)
-    median(SAR_eez_final$relative_sum_all)
-    IQR(SAR_eez_final$relative_sum_all)
+    mean(SAR_eez_final$relative_sum_all)
+    sd(SAR_eez_final$relative_sum_all)
     
     #Vessel size
     range((SAR_stats %>% distinct(unique_id,.keep_all = T))$length_m)
-    median((SAR_stats %>% distinct(unique_id,.keep_all = T))$length_m)
-    IQR((SAR_stats %>% distinct(unique_id,.keep_all = T))$length_m)
+    mean((SAR_stats %>% distinct(unique_id,.keep_all = T))$length_m)
+    sd((SAR_stats %>% distinct(unique_id,.keep_all = T))$length_m)
     
     iucn_length <- SAR_stats %>%
       distinct(unique_id, .keep_all = T) %>%
       group_by(iucn_cat) %>%
-      reframe(length_m_median = median(length_m),
-              length_m_IQR = IQR(length_m)) %>%
+      reframe(length_m_median = mean(length_m),
+              length_m_IQR = sd(length_m)) %>%
       ungroup()
     
     #Vessel size outside
     range(SAR_eez_final$length_m)
-    median(SAR_eez_final$length_m)
-    IQR(SAR_eez_final$length_m)
+    mean(SAR_eez_final$length_m)
+    sd(SAR_eez_final$length_m)
     
     #Number of detections inside MPA
     SAR_fishing_unmatched <- SAR_fishing %>% filter(category == "unmatched_fishing")
+    nrow(SAR_fishing_unmatched)
     
     #Ratio
     nrow(SAR_fishing_unmatched)/nrow(SAR_fishing)
@@ -101,18 +105,18 @@ describe_results <- function(SAR_stats){
     
     #RAnge of unmatched fishing
     range(MPA_data$unmatched_relative)
-    median(MPA_data$unmatched_relative)
-    IQR(MPA_data$unmatched_relative)
+    mean(MPA_data$unmatched_relative)
+    sd(MPA_data$unmatched_relative)
     
     #Number of unmatched fishing relative
     range(SAR_eez_final$unmatched_relative,na.rm=T)
-    median(SAR_eez_final$unmatched_relative,na.rm=T)
+    mean(SAR_eez_final$unmatched_relative,na.rm=T)
     IQR(SAR_eez_final$unmatched_relative,na.rm=T)
     
     #Fration of unmatched vessels inside MPAs
     range(MPA_data$unmatched_ratio)
-    median(MPA_data$unmatched_ratio)
-    IQR(MPA_data$unmatched_ratio)
+    mean(MPA_data$unmatched_ratio)
+    sd(MPA_data$unmatched_ratio)
     
     range(SAR_eez_final$unmatched_ratio)
     mean(SAR_eez_final$unmatched_ratio)
@@ -192,5 +196,43 @@ describe_results <- function(SAR_stats){
     range(SAR_fraction$fraction)
     mean(SAR_fraction$fraction)
     sd(SAR_fraction$fraction)
+    
+    #MPAS with no management plan
+    mpa_no_management <- mpa_wdpa_no_sf %>%
+      distinct(id_iucn, .keep_all = T) %>%
+      mutate(management_plan = ifelse(mang_plan %in% c(" Management plan is not implemented and not available","No","Management plan is not implented and not available","Not Reported"),"No management plan","Management plan")) %>%
+      filter(management_plan == "No management plan")
+    
+    nrow(mpa_no_management)/nrow(mpa_wdpa_no_sf)
+    
+    #Density mpas with no management
+    mpa_no_management_density <- SAR_stats %>%
+      distinct(id_iucn, .keep_all = T) %>%
+      mutate(management_plan = ifelse(mang_plan %in% c(" Management plan is not implemented and not available","No","Management plan is not implented and not available","Not Reported"),"No management plan","Management plan")) %>%
+      filter(management_plan == "No management plan")
+    
+    nrow(mpa_no_management_density)/nrow(SAR_stats %>% distinct(id_iucn))
+    
+    #MPAS with no iucn cat
+    mpa_no_iucn<- mpa_wdpa_no_sf %>%
+      distinct(id_iucn, .keep_all = T) %>%
+      filter(!iucn_cat %in% c("Ia","Ib","II","III","IV","VI","V"))
+    
+    nrow(mpa_no_iucn)/nrow(mpa_wdpa_no_sf %>% distinct(id_iucn))
+    
+    #Density mpas with no iucn cat
+    mpa_no_iucn_density <- SAR_stats %>%
+      distinct(id_iucn, .keep_all = T) %>%
+      filter(!iucn_cat %in% c("I","II","III","IV","VI","V"))
+    
+    nrow(mpa_no_iucn_density)/nrow(SAR_stats %>% distinct(id_iucn))
+    
+    #Number of presence/absence by iucn cat
+    fishing_presence_iucn <- mpa_wdpa_no_sf %>%
+      mutate(iucn_cat = ifelse(iucn_cat %in% c("Ia","Ib"),"I",iucn_cat)) %>%
+      #sCheck if fhsing in MPA
+      mutate(fishing_presence = as.factor(ifelse(id_iucn %in% MPA_data$id_iucn,"Fishing","No_fishing"))) %>%
+      group_by(iucn_cat, fishing_presence) %>%
+      reframe(n = n())
     
   }

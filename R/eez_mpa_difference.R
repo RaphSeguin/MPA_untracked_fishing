@@ -1,11 +1,62 @@
 eez_mpa_difference <- function(eez, mpa_wdpa, SAR_data_sf){
+  
+  #First, intersect EEZ with study area
+  study_area <- read.csv("data/study_area.csv") %>%
+    dplyr::select(study_area) %>%
+    # pivot_longer(cols = c(study_area,study_area_02,study_area_05)) %>%
+    dplyr::rename(geometry = "study_area") %>%
+    st_as_sf(wkt = "geometry", crs = 4326) %>%
+    head(18713) %>%
+    st_union()
+  
+  eez_study_area <- st_intersection(eez, study_area) %>%
+    st_make_valid() 
+
+  #Then, remove the 1km band from EEZ
+  #Create buffer 1km from shoreline
+  ROI = ne_countries(returnclass = 'sf',scale="large") %>%
+    st_combine()
+  
+  buffer_in_km <- 1
+  buffer_as_arc_degrees<- buffer_in_km/40075*360
+  
+  coastalWaters = ROI %>%
+    st_buffer(buffer_as_arc_degrees)  %>% st_wrap_dateline() %>% st_make_valid()
+  
+  #Removing parts of MPA 1km within shoreline
+  eez_no_coastline <- st_difference(eez_study_area,coastalWaters)
+  
+  #Then, remove ALL protected areas created before 2017 from the EEZ 
+  #This way only the unprotected part remains
+  #Mpa clean
+  mpa_wdpa_all <- bind_rows(st_read(dsn = "maps/WDPA/WDPA_Feb2024_Public_shp_0",
+                                layer = "WDPA_Feb2024_Public_shp-polygons",
+                                quiet = TRUE),
+                        st_read(dsn =
+                                  "maps/WDPA/WDPA_Feb2024_Public_shp_1",
+                                layer = "WDPA_Feb2024_Public_shp-polygons",
+                                quiet = TRUE),
+                        st_read(dsn =
+                                  "maps/WDPA/WDPA_Feb2024_Public_shp_2",
+                                layer = "WDPA_Feb2024_Public_shp-polygons",
+                                quiet = TRUE)) %>%
+    clean_names() %>%
+    #Keep only marine and partially marines MPAs
+    dplyr::filter(marine %in% c(1,2),
+                  !status_yr == 0) %>%
+    #Only selecting MPAs created BEFORE 2017 
+    filter(status_yr < 2017) %>%
+    filter(!status %in% c("Proposed","Established","Not Reported")) %>%
+    st_make_valid()
 
   #Union of all MPAs
-  all_mpas = mpa_wdpa %>% st_union()
+  all_mpas = mpa_wdpa_all %>% st_union()
   save(all_mpas, file = "output/all_mpas.Rdata")
   
   #EEZ without MPAs
-  eez_no_mpa <- st_difference(eez %>% st_transform(crs = st_crs(all_mpas)), all_mpas) 
+  eez_no_mpa <- st_difference(eez_no_coastline %>% st_transform(crs = st_crs(all_mpas)), all_mpas) %>%
+    st_make_valid()
+  
   save(eez_no_mpa, file = "output/eez_no_mpa.Rdata")
   
   #Getting all points which are not in MPAs using unique ID 
@@ -24,21 +75,20 @@ eez_mpa_difference <- function(eez, mpa_wdpa, SAR_data_sf){
     dplyr::filter(!unique_id %in% unique(SAR_stats$unique_id)) %>%
     st_as_sf(coords = c("lon","lat"), crs = 4326) 
   
-  #Joining with EEZ
+  #SAR points outisde
   SAR_eez <- st_join(SAR_outside_mpas, eez_no_mpa, left = F)
   
   #Get mean number of sar acquisiitons per eez and divide detections by it
   SAR_eez_clean <- SAR_eez %>%
     st_drop_geometry() %>%
+    mutate(unique_id = as.factor(unique_id)) %>%
     distinct(unique_id, .keep_all = T) %>%
-    #Mean number of overpasses per mpa
-    group_by(MRGID_SOV1) %>%
-    mutate(mean_overpasses = round(mean(overpasses_2017_2021))) %>%
-    ungroup() %>%
+    mutate(detection_count = 1,
+           detection_count = detection_count/overpasses_2017_2021) %>%
     #Calculate stats
-    add_count(MRGID_SOV1, category,name = "match_count") %>%
-    #Dividing unmatched and matched by this mean
-    mutate(match_count = match_count/mean_overpasses) %>%
+    group_by(MRGID_SOV1, category) %>%
+    mutate(match_count = sum(detection_count)) %>%
+    ungroup() %>%
     pivot_wider(names_from = "category",values_from = "match_count") 
   
   #Function to coalescec columns

@@ -2,18 +2,17 @@ calculate_stats_time <- function(SAR_mpa){
   
   #For each MPA, calculating the number of unmatched fishing boats, the number of unmatched fishing boats/km^2 and the ratio between matched and unmatched
   SAR_stats_time <- SAR_mpa %>%
+    st_drop_geometry() %>%
     distinct(unique_id, .keep_all = T) %>%
-    #Remove IUCN cat because of lack of points
-    filter(iucn_cat != "III") %>%
     #Converting country name
     mutate(country = countrycode(iso3,origin="iso3c",destination="country.name")) %>%
     #If 80% sure that boat is fishing, it is unmatched and fishing
-    mutate(category = ifelse(matched_category == "unmatched" & fishing_score >= 0.8, "unmatched_fishing",
+    mutate(category = ifelse(matched_category == "unmatched" & fishing_score >= 0.9, "unmatched_fishing",
                              #If the match is unknown, we consider it as a fishing boat if fishing score > 0.8
-                             ifelse(matched_category == "matched_unknown" & fishing_score >= 0.8, "matched_fishing",
+                             # ifelse(matched_category == "matched_unknown" & fishing_score >= 0.9, "matched_fishing",
                                     # #If it is fishing boat but the length is higher than the longest fishing boat in the world then matched_nonfishing
                                     ifelse(matched_category == "matched_fishing" & length_m > 145, "matched_unknown",
-                                           matched_category)))) %>%
+                                           matched_category))) %>%
     #Also if unmatched_fishing and length higher than 80% quantile then delete it 
     mutate(category = ifelse(category == "unmatched_fishing" & length_m > quantile(SAR_mpa$length_m, 0.8),"matched_unknown",category)) %>%
     mutate(category = ifelse(category == "unmatched_fishing" & length_m >145,"matched_unknown",category)) %>%
