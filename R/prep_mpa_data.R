@@ -85,6 +85,11 @@ prep_mpa_data <- function() {
     filter(n() == 1) %>%
     ungroup()
   
+  #remove duplicate geometries (MPAs that have exactly the same geometry but maybe have diffrenet management regimes)
+  # mpa_centroids <- st_centroid(mpa_wdpa)
+  # 
+  # mpa_wdpa_no_duplicates <- mpa_wdpa[!duplicated(mpa_centroids$geometry), ]
+  
   save(mpa_wdpa, file = "data/mpa_wdpa.Rdata")
   
   #MPA object not as sf to save space

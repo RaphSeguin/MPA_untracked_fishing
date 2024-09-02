@@ -5,7 +5,7 @@
 
 pkgs <- c("tidyverse","here","lme4","broom","tidymodels","parallel","cowplot","ggspatial","sf","RColorBrewer","ggridges","plotly","heatmaply","parsedate","birk","ggthemes","MASS","automap","pbmcapply","janitor","gfwr","arrow","beepr","sfarrow","corrplot","DHARMa",
           "harrypotter","wesanderson","ranger","missForest","rgdal","countrycode","ggpubr","data.table","randomForestExplainer","spatialRF","spaMM","DHARMa","glmmTMB","performance","spdep","rstatix","formatdown","ggrepel","tidync","nngeo","ncdf4","e1071",
-          "units","xml2","XML","rnaturalearth","ggExtra","raster","exactextractr","gstat","magrittr","scales","grid","gridExtra","XML","imputeTS","rgeos","visreg","piecewiseSEM","furrr","future","yardstick","kernelshap","gbm")
+          "units","xml2","XML","rnaturalearth","ggExtra","raster","exactextractr","gstat","magrittr","scales","grid","gridExtra","XML","imputeTS","rgeos","visreg","piecewiseSEM","furrr","future","yardstick","kernelshap","gbm","spatialsample","s2","merTools")
 nip <- pkgs[!(pkgs %in% installed.packages())]
 nip <- lapply(nip, install.packages, dependencies = TRUE)
 ip   <- unlist(lapply(pkgs, require, character.only = TRUE, quietly = TRUE))
@@ -42,10 +42,12 @@ SAR_footprints <- load_SAR_footprints()
 prep_mpa_data()
 
 # #Unionzed MPA for country comparison
-# MPA_union <- mpa_wdpa %>%
-#   group_by(parent_iso) %>%
-#   reframe(geometry = st_union(geometry)) %>%
-#   ungroup()
+MPA_union <- mpa_wdpa %>%
+  group_by(parent_iso) %>%
+  reframe(geometry = st_union(geometry)) %>%
+  ungroup()
+
+save(MPA_union, file = "output/MPA_union.Rdata")
 
 #Load Rdata
 path = (here::here("data"))
@@ -70,27 +72,28 @@ SAR_mpa <- st_join(SAR_data_sf %>% cbind(lonlat), mpa_wdpa,left = F) %>%
   #replacing MPA area with REAL mpa area
   dplyr::select(-gis_m_area) %>%
   dplyr::rename(gis_m_area = "area_correct") %>%
-  st_drop_geometry()
+  st_drop_geometry() %>%
+  #Add year
+  mutate(year = substr(timestamp, 1, 4))
 
 #First, normalize detections by number of satellite overpasses
+SAR_footprints_sf <- st_as_sf(SAR_footprints, wkt = "footprint_wkt", crs = 4326)
 
-#Temp solution for 2023
-SAR_footprints_2023 <- SAR_footprints %>% filter(grepl("2023", date))
+#Calculatre stats for EEZ
+SAR_eez_stats <- calculate_stats_eez()
 
-SAR_mpa_final <- normalize_detections(SAR_mpa, SAR_footprints_2023)
+#Calculate stats for MPA data
+SAR_stats <- calculate_stats_mpa()
+
+#Calculate stats for MPA data per year
+SAR_mpa_final <- normalize_detections(SAR_mpa, SAR_footprints_sf)
 
 save(SAR_mpa_final, file = "output/SAR_mpa_final.Rdata")
 
-#Calculate stats for MPA data
+SAR_stats_2022 <- calculate_stats(SAR_mpa_final, 2022)
+SAR_stats_2023 <- calculate_stats(SAR_mpa_final, 2023)
 
-#For each MPA, calculating various statistics
-SAR_stats <- calculate_stats(SAR_mpa_final)
-
-save(SAR_stats, file = "output/SAR_stats.Rdata")
-
-#Add MPAs with 0 fishing 
-SAR_footprints_sf <- st_as_sf(SAR_footprints_2023, wkt = "footprint_wkt", crs = 4326)
-
+#Add mpas with 0 fishing
 MPA_no_fishing <- mpa_wdpa %>%
   filter(!id_iucn %in% SAR_stats$id_iucn) %>%
   #Keep only 0 where we have at least 20 images
@@ -110,31 +113,48 @@ all_mpas_SAR <- mpa_wdpa %>%
 
 save(all_mpas_SAR, file = "output/all_mpas_SAR.Rdata")
 
-load("output/all_mpas_SAR.Rdata")
+#----MODELLING-------
 
-#Calculate the number of non fishing vessels per MPA
-mpa_SAR_non_fishing <- calculate_non_fishing_SAR()
-
-# SAR_stats_time <- calculate_stats_time(SAR_mpa)
-
-#Calculating fishing effort inside EEZs
-# SAR_eez_final <- eez_mpa_difference(SAR_data,mpa_wdpa)
-
-#----MODELLING FISHING EFFORT-------
+level_order <- c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported","EEZ") 
+legend = c("I" = "#051D41",
+           "II" = "#092C63",
+           "III" = "#0E58C6",
+           "IV" = "#2F79EE",
+           "V" = "#5090EF",
+           "VI"= "#93BAF8",
+           "Not Applicable" = "#F29F79",
+           "Not Assigned" = "#EF8B5B",
+           "Not Reported" = "#D87458",
+           "EEZ" = "#9B3742")
 
 #Calculate covariates in each MPA
 MPA_covariates <- calc_covariates_MPA()
 
-#Prep fishing effort for the model 
-mpa_wdpa_fishing <- prep_fishing_effort()
-
 load("output/MPA_covariates.Rdata")
-load("output/mpa_wdpa_fishing.Rdata")
+load("output/SAR_stats.Rdata")
+load("output/all_mpas_SAR.Rdata")
+load("output/SAR_eez_stats.Rdata")
+load("output/eez_no_mpa.Rdata")
+
+MPA_final_vars <- prep_data_for_analysis(SAR_stats, mpa_wdpa)
+EEZ_final_vars <- prep_eez_data_for_analysis(SAR_eez_stats, ezz_no_mpa)
+
+#Numbers
+describe_results()
+
+#---Model vessels---
+
+model_vessels()
+
+#---Model fishing effort----
 
 #Now model the presence/absence of fishing effort in MPAs and predict fishing presence and hours
 model_fishing()
 
-#---DESCRIBE RESULTS----
+#---data analysis----
+
+#Make supplementary
+make_supp() 
 
 #Print various statistics on MPA data
 describe_results(SAR_stats)

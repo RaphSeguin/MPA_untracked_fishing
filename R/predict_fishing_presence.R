@@ -1,37 +1,67 @@
-predict_fishing_presence <- function(mpa_model,formula_binomial, best_params_binomial, optimal_cutoff){
+predict_fishing_presence <- function(mpa_model,formula_binomial, optimal_cutoff, year){
+  
+  #create the relevant column names based on the year
+  SAR_presence_col <- paste0("SAR_matched_presence_", year)
+  SAR_all_presence_col <- paste0("SAR_all_presence_", year)
+  fishing_presence_col <- paste0("fishing_presence_", year)
+  fishing_presence_predicted_col <- paste0("fishing_presence_predicted_", year)
   
   #Train full model
-  mod_binomial_final <- ranger(
-    formula_binomial,
-    data = mpa_model,
-    mtry = best_params_binomial$mtry,            # Use best mtry
-    min.node.size = best_params_binomial$min_n,  # Use best min_n
-    num.trees = 1000,
-    probability = TRUE,                 # To get probabilities for thresholding
-    num.threads = 4,
-    importance = "permutation"
-  )
+  mod_binomial_final <- glm(formula_binomial,
+                              data = mpa_model, family=binomial())
   
-  #Predict updated
+  # Process the model outputà
+  mod_binomial_final_output <- tidy(mod_binomial_final) %>%
+    dplyr::rename(Variable = "term") %>%
+    mutate(Variable = case_when(
+      Variable == "AIS_fishing_2021_log" ~ "AIS-observed fishing effort in 2021",
+      Variable == "AIS_fishing_2022_log" ~ "AIS-observed fishing effort in 2022",
+      Variable == "SAR_matched_presence_2022SAR" ~ "Presence of SAR vessel detections",
+      Variable == "SAR_matched_presence_2023SAR" ~ "Presence of SAR vessel detections",
+      Variable == "ais_reception_positions_per_day_class_A" ~ "AIS reception: Type A transponders (pings/day)", 
+      Variable == "ais_reception_positions_per_day_class_B" ~ "AIS reception: Type B transponders (pings/day)",
+      Variable == "dist_to_shore" ~ "Distance to the shore",
+      Variable == "depth" ~ "Depth",
+      Variable == "mean_chl" ~ "Primary productivity (average)",
+      Variable == "mean_sst" ~ "Sea surface temperature (average)",
+      Variable == "Bathymetry" ~ "Depth",
+      TRUE ~ Variable
+    )) %>%
+    clean_names() %>%
+    mutate(across(where(is.numeric), round, digits = 2)) %>%
+    mutate(p_value = ifelse(p_value < 0.001, "<0.001", p_value)) 
+  
+  write.csv(mod_binomial_final_output, file = paste0("figures/supp/mod_binomial_final_output_",year,".csv"))
+  
+  #Creatign data to predict on
   mpa_model_predict_binomial <- mpa_model %>%
-    #Update the number of vessels with the unmatched number of vessels
-    dplyr::rename(fishing_matched = "fishing",
-                  fishing = "sum_all") %>%
-    #Predicting only for MPAs where at least one matched or unmatched was found
-    filter(fishing > 0) 
+    # Remove the existing column if it exists to avoid duplication
+    dplyr::select(-all_of(SAR_presence_col)) %>%
+    # Recode variables: rename sum_all_*year*_log to fishing_*year*_log
+    dplyr::rename(!!SAR_presence_col := !!sym(SAR_all_presence_col)) %>%
+    # Keep only records where at least one fishing vessel was detected and no fishing presence was recorded
+    filter(!!sym(paste0("unmatched_fishing_", year)) > 0, !!sym(fishing_presence_col) == "No_fishing")
   
-  #predict on mpas with unmatched
-  score <- predict(mod_binomial_final, mpa_model_predict_binomial, type = "response")
+  # Make predictions
+  predicted_probabilities <- predict(mod_binomial_final, newdata = mpa_model_predict_binomial, type = "response")
   
-  # Apply the optimal cutoff threshold to classify
-  mpa_model_predict_binomial$fishing_presence_predicted <- ifelse(score$predictions[, "Fishing"] >= optimal_cutoff, 
-                                                                  "Fishing", "No_fishing")
+  # Apply the optimal cutoff threshold to classify fishing presence
+  mpa_model_predict_binomial <- mpa_model_predict_binomial %>%
+    mutate(!!fishing_presence_predicted_col := factor(
+      ifelse(predicted_probabilities >= optimal_cutoff, "Fishing", "No_fishing"),
+      levels = c("No_fishing", "Fishing")
+    ))
   
-  mpa_model_predict_binomial$fishing_presence_predicted <- factor(mpa_model_predict_binomial$fishing_presence_predicted, 
-                                                                  levels = c("No_fishing", "Fishing"))
+  # Combine observed and predicted fishing presence
+  fishing_presence_data <- mpa_model %>%
+    # Exclude rows where predictions were made
+    filter(!id_iucn %in% mpa_model_predict_binomial$id_iucn) %>%
+    # Use observed fishing presence for these cases
+    mutate(!!fishing_presence_predicted_col := !!sym(fishing_presence_col)) %>%
+    # Join with the predictions
+    bind_rows(mpa_model_predict_binomial) %>%
+    dplyr::select(id_iucn, !!sym(fishing_presence_col), !!fishing_presence_predicted_col)
   
-  summary(mpa_model_predict_binomial)
-  
-  return(mpa_model_predict_binomial)
-  
+  # Return the data with predicted fishing presence
+  return(fishing_presence_data)
 }

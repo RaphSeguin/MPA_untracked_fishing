@@ -1,94 +1,69 @@
-predict_fishing_hours <- function(mpa_model_regression, formula_regression,
-                                  best_params_regression, mpa_fishing_presence){
+predict_fishing_hours <- function(mpa_model, mpa_model_regression, formula_regression, mpa_fishing_presence, year){
+  
+  
+  # Dynamically create the relevant column names based on the year
+  fishing_log_col <- paste0("fishing_", year, "_log")
+  sum_all_log_col <- paste0("sum_all_", year, "_log")
+  unmatched_fishing_col <- paste0("unmatched_fishing_", year)
+  fishing_presence_predicted_col <- paste0("fishing_presence_predicted_", year)
+  AIS_fishing_col <- paste0("AIS_fishing_", year)
+  predicted_fishing_effort_col <- paste0("predicted_fishing_effort_", year)
   
   #Train full model
-  mod_regression_final <- fitme(mpa_fishing_GFW_log ~ fishing_2022_log * fishing + 
-                                  iucn_cat + area_correct + length_matched + 
-                 seamount_distance + mean_sst + sd_sst + mean_chl + sd_chl + 
-                 depth +  + ais_reception_positions_per_day_class_A + 
-                  dist_to_shore + gdp + dist_to_port +  Matern(1 | X + Y), 
-               data = mpa_model_regression, family=gaussian(),
-               control.HLfit=list(NbThreads = 6))
+  mod_regression_final <- lmer(formula_regression, data = mpa_model_regression)
   
-  save(mod_regression_final, file = "output/mod_regression_final.Rdata")
+  # Process the model outputà
+  mod_regression_final_output <- broom.mixed::tidy(mod_regression_final,effects = "fixed",conf.int = T) %>%
+    dplyr::rename(Variable = "term") %>%
+    mutate(Variable = case_when(
+      Variable == "AIS_fishing_2021_log" ~ "AIS-observed fishing effort in 2021",
+      Variable == "AIS_fishing_2022_log" ~ "AIS-observed fishing effort in 2022",
+      Variable == "fishing_2022_log" ~ "Number of vessel detections",
+      Variable == "fishing_2023_log" ~ "Number of vessel detections",
+      Variable == "ais_reception_positions_per_day_class_A" ~ "AIS reception: Type A transponders (pings/day)", 
+      Variable == "ais_reception_positions_per_day_class_B" ~ "AIS reception: Type B transponders (pings/day)",
+      Variable == "dist_to_shore" ~ "Distance to the shore",
+      Variable == "depth" ~ "Depth",
+      Variable == "mean_chl" ~ "Primary productivity (average)",
+      Variable == "mean_sst" ~ "Sea surface temperature (average)",
+      Variable == "Bathymetry" ~ "Depth",
+      TRUE ~ Variable
+    )) %>%
+    clean_names() %>%
+    mutate(across(where(is.numeric), round, digits = 2)) 
   
-  #Check residuals
-  residuals <- residuals(mod, type = "pearson")
-  fitted_values <- fitted(mod)
+  write.csv(mod_regression_final_output, file = paste0("figures/supp/mod_regression_final_output",year,".csv"))
   
-  # Residuals vs Fitted
-  ggplot(data = NULL, aes(x = fitted_values, y = residuals)) +
-    geom_point() +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-    labs(title = "Residuals vs Fitted Values",
-         x = "Fitted Values",
-         y = "Residuals") +
-    theme_minimal()
+  # Predict fishing effort on the updated data
+  mpa_model_predict_regression <- mpa_fishing_presence %>%
+    st_drop_geometry() %>% 
+    left_join(mpa_model, by = "id_iucn") %>%
+    # Remove the existing column if it exists to avoid duplication
+    dplyr::select(-all_of(fishing_log_col)) %>%
+    # Recode variables: rename sum_all_*year*_log to fishing_*year*_log
+    dplyr::rename(!!fishing_log_col := !!sym(sum_all_log_col)) %>%
+    # Select only MPAs with predicted fishing 
+    filter(!!sym(unmatched_fishing_col) > 0) %>%
+    filter(!!sym(fishing_presence_predicted_col) == "Fishing") %>%
+    dplyr::select(-all_of(fishing_presence_predicted_col))
   
-  # Q-Q plot of residuals
-  ggplot(data = NULL, aes(sample = residuals)) +
-    stat_qq() +
-    stat_qq_line() +
-    labs(title = "Q-Q Plot of Residuals",
-         x = "Theoretical Quantiles",
-         y = "Sample Quantiles") +
-    theme_minimal()
+  # Predict on the new data
+  score <- predict(mod_regression_final, newdata = mpa_model_predict_regression, re.form=~0, allow.new.levels=T)
   
-  # Residuals vs a specific predictor, e.g., `fishing`
-  ggplot(data = mpa_model_regression, aes(x = fishing_2022_log, y = residuals)) +
-    geom_point() +
-    geom_smooth(method = "loess", color = "red") +
-    labs(title = "Residuals vs Fishing",
-         x = "fishing_2022_log",
-         y = "Residuals") +
-    theme_minimal()
+  # Backtransform the predictions using the exponential function
+  mpa_model_predict_regression[[predicted_fishing_effort_col]] <- as.vector(exp(score))
   
-  # Plot Residuals Absolute Value vs Fitted Values
-  ggplot(data = NULL, aes(x = fitted_values, y = abs(residuals))) +
-    geom_point() +
-    geom_smooth(method = "loess", color = "red") +
-    labs(title = "Absolute Residuals vs Fitted Values",
-         x = "Fitted Values",
-         y = "Absolute Residuals") +
-    theme_minimal()
+  fishing_effort_predicted <- mpa_model %>%
+    # Remove MPAs which we predicted on for final dataset
+    filter(!id_iucn %in% mpa_model_predict_regression$id_iucn) %>%
+    # For other MPAs, set known fishing effort from AIS 
+    mutate(!!predicted_fishing_effort_col := !!sym(AIS_fishing_col)) %>%
+    bind_rows(mpa_model_predict_regression) %>%
+    # If predicted fishing effort is lower than AIS, set AIS
+    mutate(!!predicted_fishing_effort_col := ifelse(!!sym(predicted_fishing_effort_col) < !!sym(AIS_fishing_col),
+                                                    !!sym(AIS_fishing_col), !!sym(predicted_fishing_effort_col))) %>%
+    dplyr::select(id_iucn, !!sym(AIS_fishing_col), !!sym(predicted_fishing_effort_col))
   
-  # Histogram of residuals
-  ggplot(data = NULL, aes(x = residuals)) +
-    geom_histogram(bins = 30, fill = "blue", color = "black") +
-    labs(title = "Histogram of Residuals",
-         x = "Residuals",
-         y = "Frequency") +
-    theme_minimal()
-  
-  #Predict updated
-  mpa_model_predict_regression  <- mpa_fishing_presence %>%
-    mutate(fishing_matched = log(fishing_matched),
-           fishing = log(fishing)) %>%
-    filter(fishing_presence_predicted == "Fishing") %>% 
-    #Predict only on MPAs with at least one unmatched fishing vessel
-    filter(unmatched_fishing > 0) %>%
-    #Update the number of vessels with the unmatched number of vessels, and length of all vessels
-    dplyr::select(-c(length_matched)) %>%
-    dplyr::rename(length_matched = "length_all") 
-  
-  # Predict on new data
-  # score <- predict(mod_regression_final, mpa_model_predict_regression)$predictions
-  
-  # Predict on the test set
-  score <- predict(mod_regression_final, newdata = mpa_model_predict_regression)
-  
-  # Get predictions with confidence intervals
-  ci <- get_intervals(mod, newdata = test, intervals = "predVar", level = 0.95)
-  
-  # Backtransform the predictions using the smearing coefficient
-  mpa_model_predict_regression$predicted_fishing_effort_log <- score
-  mpa_model_predict_regression$predicted_fishing_effort <- exp(score) 
-  
-  truc <- mpa_model_predict_regression %>% dplyr::select(mpa_fishing_GFW_log, predicted_fishing_effort_log,
-                                                         mpa_fishing_GFW, predicted_fishing_effort,
-                                                         fishing_2022,fishing_matched, fishing)
-  return(mpa_model_predict_regression)
-  
-  
+  return(fishing_effort_predicted)
   
 }

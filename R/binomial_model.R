@@ -1,31 +1,5 @@
 binomial_model <- function(){
   
-  #Model data
-  load("data/dataAMP_150922.Rdata")
-  # # load("data/dataOutAMP_150922.Rdata")
-  load("data/IUCN.I.VI.AMP.Rdata")
-  
-  #Keep ID for join 
-  AMP_ID <- dataAMP %>% dplyr::select(ID,WDPAID) %>% mutate(ID = as.factor(ID),
-                                                            WDPAID = as.factor(WDPAID))
-  
-  #Keep only numeric variables
-  AMP_model_data <- IUCN.I.VI.AMP %>%
-    rownames_to_column("ID") %>%
-    left_join(AMP_ID, by = "ID") %>%
-    st_as_sf(coords = c("long","lat"), crs = 4326) %>% 
-    dplyr::select(-c(IUCN_CAT,WDPAID,ISO3))
-  
-  coords <- cbind(st_coordinates(AMP_model_data),AMP_model_data %>% st_drop_geometry %>% dplyr::select(ID))
-  
-  #Mpa data
-  MPA_model_data <- SAR_stats %>% 
-    distinct(id_iucn, .keep_all = T) 
-  
-  #mpa data for zeros
-  mpa_full_data <- mpa_wdpa_no_sf %>%
-    distinct(id_iucn, .keep_all = T) %>%
-    dplyr::select(-gis_m_area)
   
   #MPA model data
   MPA_model_data_final <- MPA_model_data %>%

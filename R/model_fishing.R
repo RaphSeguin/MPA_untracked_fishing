@@ -1,157 +1,125 @@
 model_fishing <- function(){
   
   #Prep data for models
-  mpa_model <- prep_model_data(MPA_covariates, mpa_wdpa_fishing)
-  
-  #Create spatial folds for spatial cross validation
-  spatial_folds <- create_spatial_folds(MPA_covariates)
-  folds <- spatial_folds$folds_ids
+  mpa_model <- prep_model_data(MPA_covariates, mpa_wdpa)
   
   #-----Binomial model-------
   
   #Formula for binomial model
   # Response variable
-  yvar <- "fishing_presence"
+  formula_binomial_2022 <- as.formula(fishing_presence_2022 ~ AIS_fishing_2021_log + 
+                                        SAR_matched_presence_2022 + depth + dist_to_shore + 
+                                        mean_sst +  mean_chl + 
+                                   ais_reception_positions_per_day_class_A + ais_reception_positions_per_day_class_B)
   
-  # Predictor variables
-  xvars <- c("iucn_cat", "area_correct", 
-             "seamount_distance", "mean_sst", "sd_sst", 
-             "mean_chl", "sd_chl", "depth", 
-             "ais_reception_positions_per_day_class_A", 
-             "ais_reception_positions_per_day_class_B",
-             "dist_to_shore", "gdp", "X", "Y", 
-             "dist_to_port", "fishing")
-  
-  # Create the formula 
-  formula_binomial <- as.formula(paste(yvar, "~", paste(xvars, collapse = " + ")))
+  formula_binomial_2023 <- as.formula(fishing_presence_2023 ~ AIS_fishing_2022_log + 
+                                        SAR_matched_presence_2023 + depth + dist_to_shore + 
+                                        mean_sst +  mean_chl + 
+                                        ais_reception_positions_per_day_class_A + ais_reception_positions_per_day_class_B)
+                                        # Matern(1 | X + Y))
   
   #Tune binomial model
-  best_params_binomial <- tune_binomial_model(mpa_model, formula_binomial)
-  save(best_params_binomial, file = "output/best_params_binomial.Rdata")
+  # best_params_binomial <- tune_binomial_model(mpa_model, formula_binomial)
+  # save(best_params_binomial, file = "output/best_params_binomial.Rdata")
   
+  # Create 10-fold cross-validation folds
+  sf::sf_use_s2(T)
+  folds <-  spatial_clustering_cv(mpa_model, v = 10)
+
   #Find the optimal cutoff threshold
-  optimal_cutoff <- find_cutoff_binomial(mpa_model, folds)
+  # optimal_cutoff <- find_cutoff_binomial(mpa_model, folds, formula_binomial)
+  optimal_cutoff = 0.5
 
   #Train and test the binomial model
-  binomial_performance <- cv_binomial(mpa_model, folds, best_params_binomial, optimal_cutoff, formula_binomial)
+  binomial_performance_2022 <- cv_binomial_spamm(mpa_model, folds, optimal_cutoff, formula_binomial_2022, "fishing_presence_2022")
   
-  # Combine performance metrics across all folds into a single dataframe
-  performance_metrics <- do.call(rbind, lapply(binomial_performance, function(res) res$performance))
+  write.csv(binomial_performance_2022, file = "figures/supp/binomial_performance_2022.csv")
   
-  # Calculate the average of each performance metric across the folds
-  average_performance_df <- data.frame(
-    Mean_Accuracy = mean(performance_metrics$Accuracy),
-    Mean_Kappa = mean(performance_metrics$Kappa),
-    Mean_Precision = mean(performance_metrics$Precision),
-    Mean_Recall = mean(performance_metrics$Recall),
-    Mean_F1_Score = mean(performance_metrics$F1_Score),
-    Mean_ROC_AUC = mean(performance_metrics$ROC_AUC)
-  )
-  
-  # Combine variable importance across all folds into a single dataframe
-  all_importance <- do.call(rbind, lapply(binomial_performance, function(res) res$importance))
-  
-  # Calculate the average importance for each variable across the folds
-  average_importance <- aggregate(Importance ~ Variable, data = all_importance, mean)
-  
-  # Calculate the percentage of the average importance
-  average_importance$Importance_Percentage <- (average_importance$Importance / sum(average_importance$Importance)) * 100
-  
-  # View the dataframe of average variable importance
-  print("Average Variable Importance:")
-  print(average_importance)
-  
+  binomial_performance_2023 <- cv_binomial_spamm(mpa_model, folds, optimal_cutoff, formula_binomial_2023, "fishing_presence_2023")
+  write.csv(binomial_performance_2023, file = "figures/supp/binomial_performance_2023.csv")
   #-----Regression model-------
   
-  #Add image count? 
+  # Formula for regression model
+  formula_regression_2022 <- as.formula(AIS_fishing_2022_log ~ AIS_fishing_2021_log + fishing_2022_log +
+                                          depth + dist_to_shore + 
+                                   mean_sst +  mean_chl + 
+                                   ais_reception_positions_per_day_class_A + ais_reception_positions_per_day_class_B +
+                                     (1|parent_iso))
+                                   # Matern(1 | X + Y))
   
-  #Bilan
-  
-  #If i train my model on MPAs with fishing and fishing vessels only the importance of fishing vessels
-  #is more recognized
-  
-  #If I remove fihsing hours in 2022 then the model is bad, especially at higher values, but predicts more fishing hours
-  
-  #Formula for binomial model
-  # Response variable
-  yvar <- "mpa_fishing_GFW_log"
-  
-  # Predictor variables
-  xvars <- c("iucn_cat", "area_correct", "length_matched",
-             "seamount_distance", "mean_sst", "sd_sst", 
-             "mean_chl", "sd_chl", "depth", "fishing_2022_log",
-             "ais_reception_positions_per_day_class_A", 
-             "ais_reception_positions_per_day_class_B",
-             "dist_to_shore", "gdp", "X", "Y", 
-             "dist_to_port", "fishing")
-  
-  # Create the formula 
-  formula_regression <- as.formula(paste(yvar, "~", paste(xvars, collapse = " + ")))
+  formula_regression_2023 <- as.formula(AIS_fishing_2023_log ~ AIS_fishing_2022_log + fishing_2023_log +
+                                     depth + dist_to_shore  + 
+                                     mean_sst +  mean_chl+ 
+                                     ais_reception_positions_per_day_class_A + ais_reception_positions_per_day_class_B+
+                                       (1|parent_iso))
+                                     # Matern(1 | X + Y))
 
   #Adjust model data for regression
-  mpa_model_regression <- mpa_model %>%
-    filter(mpa_fishing_GFW > 0) %>%
-    filter(fishing > 0) %>%
-    mutate(fishing = arm::rescale(log(fishing)),
-           sum_all = arm::rescale(log(sum_all))) %>%
-    distinct(X,Y, .keep_all = T)
+  mpa_model_regression_2022 <- mpa_model %>%
+    filter(AIS_fishing_2022 > 0 & fishing_2022 > 0) %>%
+    distinct(X, Y, .keep_all = TRUE)
   
-  #Validation set
-  # Determine the 90th quantile of the fishing column
-  high_fishing_threshold <- quantile(mpa_model_regression$mpa_fishing_GFW, 0.9)
+  mpa_model_regression_2023 <- mpa_model %>%
+    filter(AIS_fishing_2023 > 0 & fishing_2023 > 0) %>%
+    distinct(X, Y, .keep_all = TRUE)
   
-  # Create a stable validation set with high fishing values
-  validation_set <- mpa_model_regression[mpa_model_regression$mpa_fishing_GFW > high_fishing_threshold, ]
+  # Validation set
+  high_fishing_threshold <- quantile(mpa_model_regression_2022$AIS_fishing_2022, 0.9)
+  validation_set_2022 <- mpa_model_regression_2022[mpa_model_regression_2022$AIS_fishing_2022 > high_fishing_threshold, ]
+  mpa_model_regression_no_val_2022 <- mpa_model_regression_2022 %>% dplyr::filter(!id_iucn %in% validation_set_2022$id_iucn)
   
-  # Remove the validation set from the main dataset for cross-validation
-  mpa_model_regression_no_val <- mpa_model_regression %>% filter(!id_iucn %in% validation_set$id_iucn)
+  # Validation set
+  high_fishing_threshold <- quantile(mpa_model_regression_2023$AIS_fishing_2023, 0.9)
+  validation_set_2023 <- mpa_model_regression_2023[mpa_model_regression_2023$AIS_fishing_2023 > high_fishing_threshold, ]
+  mpa_model_regression_no_val_2023 <- mpa_model_regression_2023 %>% filter(!id_iucn %in% validation_set_2023$id_iucn)
   
-  #Check for correlation between vars
-  check_correlation(mpa_model_regression_no_val)
+  set.seed(982)
+  # Create 10-fold cross-validation folds
+  folds_regression_2022 <- spatial_clustering_cv(mpa_model_regression_no_val_2022, v = 10)
+  folds_regression_2023 <-spatial_clustering_cv(mpa_model_regression_no_val_2023, v = 10)
   
-  #Spatial folds for regression
-  spatial_folds_regression <- create_spatial_folds_regression(MPA_covariates, mpa_model_regression_no_val)
-  folds_regression = spatial_folds_regression$folds_ids
-
-  #Tune regression model
-  best_params_regression <- tune_regression_model(mpa_model_regression, formula_regression) 
-  save(best_params_regression, file = "output/best_params_regression.Rdata")
+  # Cross-validation for regression
+  regression_performance_2022 <- cv_regression_spammm(folds_regression_2022, formula_regression_2022, validation_set_2022, "AIS_fishing_2022")
+  write.csv(regression_performance_2022, file = "figures/supp/regression_performance_2022.csv")
   
-  #Regression performance
-  regression_performance <- cv_regression(mpa_model_regression, folds_regression, 
-                                          best_params_regression, formula_regression)
+  regression_performance_2023 <- cv_regression_spammm(folds_regression_2023, formula_regression_2023, validation_set_2023, "AIS_fishing_2023")
+  write.csv(regression_performance_2023, file = "figures/supp/regression_performance_2023.csv")
   
-  # Combine performance metrics across all folds into a single dataframe
-  performance_metrics <- do.call(rbind, lapply(regression_performance, function(res) res$performance))
+  sf_use_s2(F)
   
-  # Calculate the average of each performance metric across the folds
-  average_performance_df <- data.frame(
-    Mean_RMSE = mean(performance_metrics$RMSE),
-    Mean_MAE = mean(performance_metrics$MAE),
-    Mean_MedAE = mean(performance_metrics$MedAE),
-    Mean_R2 = mean(performance_metrics$R2),
-    Mean_RSQ_TRAD = mean(performance_metrics$RSQ_TRAD),
-    Mean_NRMSE = mean(performance_metrics$NRMSE),
-    Mean_CVRMSE = mean(performance_metrics$CVRMSE)
-  )
-  
-  # Combine variable importance across all folds into a single dataframe
-  all_importance <- do.call(rbind, lapply(regression_performance, function(res) res$importance))
-  
-  # Calculate the average importance for each variable across the folds
-  average_importance <- all_importance %>%
-    group_by(Variable) %>%
-    summarise(MeanImportance = mean(Importance)) %>%
-    arrange(desc(MeanImportance))
-  
-  # Calculate the percentage of the average importance
-  average_importance$Importance_Percentage <- (average_importance$MeanImportance / sum(average_importance$MeanImportance)) * 100
+  #Check if predictions are realistic
+  # predictions_check <- check_realistic_predictions()
   
   #Predicting fishing presence and number of fishing hours
-  mpa_fishing_presence <- predict_fishing_presence(mpa_model,formula_binomial, best_params_binomial, optimal_cutoff)
+  fishing_presence_2022 <- predict_fishing_presence(mpa_model,formula_binomial_2022, optimal_cutoff, 2022)
+  fishing_presence_2023 <- predict_fishing_presence(mpa_model,formula_binomial_2023, optimal_cutoff, 2023)
   
   #Predicting the number of fishing hours
-  mpa_fishing_hours <- predict_fishing_hours()
+  fishing_hours_2022 <- predict_fishing_hours(mpa_model %>% st_drop_geometry(), 
+                                              mpa_model_regression_2022 %>% st_drop_geometry(), 
+                                              formula_regression_2022, fishing_presence_2022, 2022)
+  
+  summary(fishing_hours_2022)
+  
+  fishing_hours_2023 <- predict_fishing_hours(mpa_model %>% st_drop_geometry(), 
+                                              mpa_model_regression_2023 %>% st_drop_geometry(), 
+                                              formula_regression_2023, fishing_presence_2023, 2023)
+  
+  summary(fishing_hours_2023)
+  
+  #Plot figures for both models
+  plot_figures_binomial_model(mpa_model, formula_binomial_2022, formula_binomial_2023)
+  plot_figures_regression_model(mpa_model, formula_regression)
+  
+  #Plot figures
+  figures_fishing_predictions(mpa_model,fishing_presence_2022, fishing_presence_2023, fishing_hours_2022, fishing_hours_2023)
+  
+  #Predictions by IUCN category
+  figures_fishing_predictions_iucn()
+  
+  #Plot performance of model across all folds
+  plot_performance_distribution()
+
   
   
 }

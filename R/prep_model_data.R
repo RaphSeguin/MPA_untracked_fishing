@@ -1,42 +1,72 @@
-prep_model_data <- function(MPA_covariates, mpa_wdpa_fishing){
+prep_model_data <- function(MPA_covariates, mpa_wdpa){
   
   # Prep data for model
   mpa_model <- MPA_covariates %>%
-    st_drop_geometry %>%
-    left_join(mpa_wdpa_fishing, by = "id_iucn") %>%
-    #Join with MPAs for geometry
+    st_drop_geometry() %>%
     left_join(mpa_wdpa %>% dplyr::select(id_iucn), by = "id_iucn") %>%
     st_as_sf() %>%
-    #Transform vars 
-    mutate(fishing_presence = ifelse(mpa_fishing_GFW == 0, "No_fishing", "Fishing"),
-           fishing_presence = as.factor(fishing_presence),
-           fishing = ifelse(is.na(fishing), 0, fishing),
-           mpa_fishing_GFW_log = log(mpa_fishing_GFW + 1),
-           fishing_2022_log = log(fishing_2022 + 1),
-           length_matched = ifelse(is.na(length_matched),0,length_matched)) %>%
-    #Select variables of interest
-    dplyr::select(id_iucn, iucn_cat, fishing, unmatched_fishing, sum_all, fishing_presence, 
-                  mpa_fishing_GFW,mpa_fishing_GFW_log,fishing_2022, fishing_2022_log,
-                  status_yr, iso3, area_correct, marine,mean_sst:travel_time, 
-                  ais_reception_positions_per_day_class_A,
-                  ais_reception_positions_per_day_class_B, length_matched, 
-                  length_unmatched, length_all) %>%
-    #Transform variables - as factor/rescale/transform sd to 0
-    mutate(across(c(iucn_cat, iso3, marine, lme, ecoregion), as.factor),
-           across(c(area_correct, mean_sst, sd_sst, mean_chl, sd_chl, depth, 
-                    mean_anom, sd_anom, seamount_distance, mean_wind_speed, sd_wind_speed,
-                    dist_to_port, dist_to_shore, abyssal, shelf, slope, sediment,
-                    ais_reception_positions_per_day_class_A, ais_reception_positions_per_day_class_B,
-                    gdp, travel_time, length_matched, length_unmatched, length_all), rescale),
-           sd_chl = ifelse(is.na(sd_chl), 0, sd_chl)) 
-  
-  #Drop geometry
+    # Transform variables
+    #Coding factor for fishing presence
+    mutate(fishing_presence_2022 = as.factor(ifelse(AIS_fishing_2022 == 0, "No_fishing", "Fishing")),
+           fishing_presence_2023 = as.factor(ifelse(AIS_fishing_2023 == 0, "No_fishing", "Fishing")),
+           fishing_presence_2022 = relevel(fishing_presence_2022, ref = "No_fishing"),
+           fishing_presence_2023 = relevel(fishing_presence_2023, ref = "No_fishing"), 
+           #number of vessels and log it
+           fishing_2022 = ifelse(is.na(fishing_2022), 0, fishing_2022),
+           fishing_2022_log = log(fishing_2022), 
+           sum_all_2022 = ifelse(is.na(sum_all_2022), 0, sum_all_2022),
+           sum_all_2022_log = log(sum_all_2022),
+           fishing_2023 = ifelse(is.na(fishing_2023), 0, fishing_2023),
+           fishing_2023_log = log(fishing_2023), 
+           sum_all_2023 = ifelse(is.na(sum_all_2023), 0, sum_all_2023),
+           sum_all_2023_log = log(sum_all_2023),
+           #Add SAR presence factor
+           SAR_matched_presence_2022 = as.factor(ifelse(fishing_2022 == 0,"No_SAR","SAR")),
+           SAR_matched_presence_2023 = as.factor(ifelse(fishing_2023 == 0,"No_SAR","SAR")),
+           SAR_all_presence_2022 =  as.factor(ifelse(sum_all_2022 == 0,"No_SAR","SAR")),
+           SAR_all_presence_2023 =  as.factor(ifelse(sum_all_2023 == 0,"No_SAR","SAR")),
+           #AIS fishing effort in hours log
+           AIS_fishing_2021_log = log(AIS_fishing_2021),
+           AIS_fishing_2022_log = log(AIS_fishing_2022),
+           AIS_fishing_2023_log = log(AIS_fishing_2023),
+           AIS_fishing_all = AIS_fishing_2022 + AIS_fishing_2023,
+           fishing_all = fishing_2022 + fishing_2023, 
+           sd_chl = ifelse(is.na(sd_chl), 0, sd_chl)) %>%
+    #Replace NaN with 0
+    mutate(across(c(fishing_2022_log, fishing_2023_log, sum_all_2022_log,
+                    sum_all_2023_log, AIS_fishing_2021_log,
+                    AIS_fishing_2022_log, AIS_fishing_2023_log),
+                  ~ ifelse(is.nan(.) | (is.infinite(.) & . < 0), 0, .))) %>%
+    # Select variables of interest
+    dplyr::select(id_iucn, parent_iso,fishing_2022, fishing_2022_log, sum_all_2022, sum_all_2022_log, fishing_presence_2022,
+                  SAR_matched_presence_2022, SAR_matched_presence_2023, SAR_all_presence_2022, SAR_all_presence_2023,
+                  fishing_2023, fishing_2023_log, sum_all_2023, sum_all_2023_log, fishing_presence_2023,
+                  unmatched_fishing_2022, unmatched_fishing_2023, 
+                  AIS_fishing_2021, AIS_fishing_2021_log, 
+                  AIS_fishing_2022, AIS_fishing_2022_log,
+                  AIS_fishing_2023, AIS_fishing_2023_log,
+                  AIS_fishing_all, fishing_all,iucn_cat,
+                  mean_chl, sd_chl, mean_sst, sd_sst,area_correct,
+                  seamount_distance, depth, dist_to_shore, travel_time, 
+                  hf, HDI, MarineEcosystemDependency, gdp, 
+                  ais_reception_positions_per_day_class_A, ais_reception_positions_per_day_class_B) %>%
+    # Transform variables as factors and rescale others
+    mutate(across(c(mean_sst, sd_sst, mean_chl, sd_chl, depth, 
+                    seamount_distance,  travel_time, dist_to_shore, area_correct,
+                    hf, gdp, 
+                    ais_reception_positions_per_day_class_A, ais_reception_positions_per_day_class_B),
+                  rescale),
+           parent_iso = as.factor(parent_iso))
+
+  # Drop geometry and add coordinates
   mpa_model_coordinates <- mpa_model %>% st_centroid() %>% st_coordinates()
   
-  mpa_model <- mpa_model %>% st_drop_geometry %>% bind_cols(mpa_model_coordinates) %>%
-    mutate(X = rescale(X),
-           Y = rescale(Y))
+  mpa_model <- mpa_model %>%
+    st_drop_geometry() %>%
+    bind_cols(mpa_model_coordinates) %>%
+    distinct(X, Y, .keep_all = T) %>%
+    left_join(mpa_wdpa %>% dplyr::select(id_iucn) %>% st_centroid(), by = "id_iucn") %>%
+    st_as_sf()
   
   return(mpa_model)
-  
 }

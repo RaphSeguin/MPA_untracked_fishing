@@ -1,18 +1,10 @@
-calculate_stats <- function(SAR_mpa_final, year_selected){
-  
-  # Create dynamic column names based on the year_selected
-  image_count_col <- paste0("image_count_", year_selected)
-  normalized_detection_col <- paste0("normalized_detection_", year_selected)
+calculate_stats_all <- function(SAR_mpa_all){
   
   #For each MPA, calculating the number of unmatched fishing boats, the number of unmatched fishing boats/km^2 and the ratio between matched and unmatched
-  SAR_stats <- SAR_mpa_final %>%
+  SAR_stats <- SAR_mpa_all %>%
     st_drop_geometry() %>%
     # Only keep detections where at least 20 images were taken
-    filter((!is.na(.data[[image_count_col]]) & .data[[image_count_col]] >= 20)) %>%
-    filter(year == year_selected) %>%
-    # Cleaning data 
-    # Converting country name
-    mutate(country = countrycode(iso3, origin="iso3c", destination="country.name")) %>%
+    filter(image_count >= 20) %>%
     # Drop all factor levels except two
     mutate(matched_category = droplevels(factor(matched_category, levels = c("unmatched", "fishing"))),
            matched_category = as.character(matched_category)) %>%
@@ -23,10 +15,10 @@ calculate_stats <- function(SAR_mpa_final, year_selected){
     filter(category %in% c("fishing", "unmatched_fishing")) %>%
     # Also if unmatched_fishing and length higher than 90% quantile then delete it 
     filter(length_m < 145) %>%
-    filter(length_m < quantile(SAR_mpa_final$length_m, 0.95, na.rm = T)) %>%
+    filter(length_m < quantile(SAR_mpa_all$length_m, 0.95, na.rm = T)) %>%
     # Calculate, using dynamic column names
     group_by(id_iucn, category) %>%
-    mutate(match_count = sum(.data[[normalized_detection_col]], na.rm = TRUE)) %>%
+    mutate(match_count = sum(normalized_detection,na.rm = T)) %>%
     ungroup() %>%
     # Calculate stats
     pivot_wider(names_from = "category", values_from = "match_count") 
@@ -60,4 +52,5 @@ calculate_stats <- function(SAR_mpa_final, year_selected){
   
   return(SAR_stats_final)
   
-  }
+  
+}
