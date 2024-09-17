@@ -24,9 +24,7 @@ model_all_vessels <- function(mpa_vessel_model){
   
   save(mod_spamm, file = "output/mod_spamm.Rdata")
   
-  load("output/mod_spamm.Rdata")
-  
-  pseudoR2(mod_spamm)
+  # print(pseudoR2(mod_spamm))
   
   # Process the model output
   mod_spamm_output <- summary(mod_spamm, details = list(p_value = TRUE))$beta_table %>%
@@ -67,5 +65,7 @@ model_all_vessels <- function(mpa_vessel_model){
   write.csv(mod_spamm_output, file = "figures/supp/mod_spamm_output.csv")
   
   plot_and_save_partial_effects(mod_spamm, mpa_vessel_model_regression, "mod_spamm")
+  
+  return(mod_spamm)
   
 }

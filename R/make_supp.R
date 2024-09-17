@@ -111,7 +111,7 @@ make_supp <- function(MPA_final_vars){
     geom_boxplot() +
     scale_fill_manual(values = legend) +
     labs(x = "",
-         y = "Number of unmatched vessel detections (log-scale)") +
+         y = "Number of untracked vessel detections (log-scale)") +
     my_custom_theme() +
     theme(
       legend.position = "bottom"
@@ -125,7 +125,7 @@ make_supp <- function(MPA_final_vars){
     geom_boxplot() +
     scale_fill_manual(values = legend) +
     labs( x = "",
-         y = "Percentage of unmatched vessel detections") +
+         y = "Percentage of untracked vessel detections") +
     my_custom_theme() +
     theme(
       legend.position = "bottom"
@@ -153,7 +153,7 @@ make_supp <- function(MPA_final_vars){
     geom_boxplot() +
     scale_x_discrete(breaks = seq(min(MPA_final_vars$status_yr), max(MPA_final_vars$status_yr), by = 10)) +
     labs(x = "MPA Creation Year",
-         y = "Number of unmatched fishing vessel detections") +
+         y = "Number of untracked fishing vessel detections") +
     my_custom_theme() +
     theme(
       legend.position = "none"
@@ -168,7 +168,7 @@ make_supp <- function(MPA_final_vars){
     scale_y_continuous() +
     scale_x_discrete(breaks = seq(min(MPA_final_vars$status_yr), max(MPA_final_vars$status_yr), by = 10)) +
     labs(x = "MPA Creation Year",
-         y = "Percentage of unmatched fishing vessel detections") +
+         y = "Percentage of untracked fishing vessel detections") +
     my_custom_theme() +
     theme(
       legend.position = "none"
@@ -200,6 +200,46 @@ make_supp <- function(MPA_final_vars){
     )
   
   ggsave(surface_mpa_country, file = "figures/supp/surface_mpa_country.jpg", 
+         width = 297, height = 210, units = "mm", dpi = 300)
+  
+  #Number of SAR vessels in EEZs
+  n_vessels_EEZ <-  EEZ_final_vars %>%
+    arrange(desc(sum_all)) %>%
+    slice(1:20) %>%
+    mutate(country_name = countrycode(ISO_SOV1, "iso3c", "country.name")) %>%
+    filter(!is.na(country_name)) %>%
+    ggplot(aes(x = reorder(country_name, sum_all), y = sum_all)) +
+    geom_bar(stat = "identity", fill = "gray") +
+    coord_flip() +
+    labs( x = "",
+          y = "Number of fishing vessel detections") +
+    scale_y_continuous(labels = scales::comma) +
+    my_custom_theme() +
+    theme(
+      legend.position = "none"
+    )
+  
+  ggsave(n_vessels_EEZ, file = "figures/supp/n_vessels_EEZ.jpg", 
+         width = 297, height = 210, units = "mm", dpi = 300)
+  
+  #Number of unmatched SAR vessels in EEZs
+  n_unmatched_vessels_EEZ <- EEZ_final_vars %>%
+    arrange(desc(unmatched_fishing)) %>%
+    slice(1:20) %>%
+    mutate(country_name = countrycode(ISO_SOV1, "iso3c", "country.name")) %>%
+    filter(!is.na(country_name)) %>%
+    ggplot(aes(x = reorder(country_name, unmatched_fishing), y = unmatched_fishing)) +
+    geom_bar(stat = "identity", fill = "gray") +
+    coord_flip() +
+    labs(x = "",
+         y = "Number of untracked fishing vessel detections") +
+    scale_y_continuous(labels = scales::comma) +
+    my_custom_theme() +
+    theme(
+      legend.position = "none"
+    )
+  
+  ggsave(n_unmatched_vessels_EEZ, file = "figures/supp/n_unmatched_vessels_EEZ.jpg", 
          width = 297, height = 210, units = "mm", dpi = 300)
   
   #Number of SAR vessels by country
@@ -239,7 +279,7 @@ make_supp <- function(MPA_final_vars){
     geom_bar(stat = "identity", fill = "gray") +
     coord_flip() +
     labs(x = "",
-         y = "Number of unmatched fishing vessel detections") +
+         y = "Number of untracked fishing vessel detections") +
     scale_y_continuous(labels = scales::comma) +
     my_custom_theme() +
     theme(
@@ -283,7 +323,7 @@ make_supp <- function(MPA_final_vars){
     geom_bar(stat = "identity", fill = "gray") +
     coord_flip() +
     labs(x = "",
-         y = "Average density of unmatched fishing vessel detections in MPAs") +
+         y = "Average density of untracked fishing vessel detections in MPAs") +
     scale_y_continuous(labels = scales::comma) +
     my_custom_theme() +
     theme(
@@ -293,45 +333,6 @@ make_supp <- function(MPA_final_vars){
   ggsave(unmatched_density_mpas, file = "figures/supp/unmatched_density_mpas.jpg", 
          width = 297, height = 210, units = "mm", dpi = 300)
   
-  #Number of SAR vessels in EEZs
-  n_vessels_EEZ <-  EEZ_final_vars %>%
-    arrange(desc(sum_all)) %>%
-    slice(1:20) %>%
-    mutate(country_name = countrycode(ISO_SOV1, "iso3c", "country.name")) %>%
-    filter(!is.na(country_name)) %>%
-    ggplot(aes(x = reorder(country_name, sum_all), y = sum_all)) +
-    geom_bar(stat = "identity", fill = "gray") +
-    coord_flip() +
-    labs( x = "",
-         y = "Number of fishing vessel detections") +
-    scale_y_continuous(labels = scales::comma) +
-    my_custom_theme() +
-    theme(
-      legend.position = "none"
-    )
-  
-  ggsave(n_vessels_EEZ, file = "figures/supp/n_vessels_EEZ.jpg", 
-         width = 297, height = 210, units = "mm", dpi = 300)
-  
-  #Number of unmatched SAR vessels in EEZs
-  n_unmatched_vessels_EEZ <- EEZ_final_vars %>%
-    arrange(desc(unmatched_fishing)) %>%
-    slice(1:20) %>%
-    mutate(country_name = countrycode(ISO_SOV1, "iso3c", "country.name")) %>%
-    filter(!is.na(country_name)) %>%
-    ggplot(aes(x = reorder(country_name, unmatched_fishing), y = unmatched_fishing)) +
-    geom_bar(stat = "identity", fill = "gray") +
-    coord_flip() +
-    labs(x = "",
-         y = "Number of unmatched fishing vessel detections") +
-    scale_y_continuous(labels = scales::comma) +
-    my_custom_theme() +
-    theme(
-      legend.position = "none"
-    )
-  
-  ggsave(n_unmatched_vessels_EEZ, file = "figures/supp/n_unmatched_vessels_EEZ.jpg", 
-         width = 297, height = 210, units = "mm", dpi = 300)
   
   #Fraction of SAR vessel in MPAs per EEZ
   SAR_eez_stats %>%
@@ -388,8 +389,8 @@ make_supp <- function(MPA_final_vars){
     geom_bar(aes(reorder(country,-value), value, fill = name),stat="identity") +
     scale_fill_hp_d(option="Ravenclaw",labels = c("inside_mpa" = "Inside MPAs", "outside_mpa"="Outside MPAs"))+
     labs(x = " ",
-         y = "Number of unmatched fishing vessel detections",
-         fill = "Fraction of unmatched fishing vessel detections: ") +
+         y = "Number of untracked fishing vessel detections",
+         fill = "Fraction of untracked fishing vessel detections: ") +
     my_custom_theme() +
     theme(legend.position = "top") +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
@@ -492,8 +493,34 @@ make_supp <- function(MPA_final_vars){
     dplyr::select(name, iucn_cat, management_plan,area_correct, country, fishing) %>%
     mutate(fishing = round(fishing,4),
            area_correct = round(area_correct, 0)) %>%
-    arrange(desc(fishing))
+    arrange(desc(fishing)) %>%
+    distinct(name, .keep_all = T) %>%
+    distinct(area_correct, .keep_all = T)
   
   write.csv(MPA_SAR_no_unmatched_table, "figures/supp/MPA_SAR_no_unmatched_table.csv")
+  
+  #Correlation with LMEs
+  MPA_corr <- MPA_covariates %>%
+    mutate(AIS_fishing_all = AIS_fishing_2022 + AIS_fishing_2023,
+           SAR_all = fishing_2022 + fishing_2023) %>%
+    filter(AIS_fishing_all > 0) %>%
+    filter(SAR_all > 0) %>%
+    st_join(LME %>% dplyr::select(LME_NAME), join = st_nearest_feature) %>%
+    group_by(LME_NAME) %>%
+    filter(n() > 15) %>%
+    ungroup()
+    
+  corr_across_LME <- ggplot(MPA_corr, aes(log(SAR_all), log(AIS_fishing_all))) + 
+    geom_point() + 
+    my_custom_theme() +
+    labs(x = "Number of tracked detections",
+         y = "Fishing effort") +
+    facet_wrap(~ LME_NAME)
+  
+  ggsave(corr_across_LME, file = "figures/Supp/corr_across_LME.jpg",
+         width = 297,
+         height = 210,
+         units = "mm",
+         dpi = 300)
   
 }

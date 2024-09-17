@@ -21,9 +21,8 @@ cv_regression_spammm <- function(folds_regression, formula_regression, validatio
     test$preds <- exp(test_preds_log)
     validation_set$preds <- exp(val_preds_log)
     
-    ggplot(test, aes(log(preds), log(AIS_fishing_2022))) + geom_point()
-    
-    ggplot(validation_set, aes(log(preds), log(AIS_fishing_2022))) + geom_point()
+    write.csv(test, file = "test.csv")
+
     
     # Calculate performance metrics on the test set
     rmse <- caret::RMSE(test$preds, test[[pred_var]])

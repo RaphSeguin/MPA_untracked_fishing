@@ -41,9 +41,14 @@ global_map <- function(){
   
   study_area <- st_read("data/study_area_clean.shp")
   
+  #Matched category color
+  matched_category_colors <- c("fishing" = "#E69F00", "unmatched" = "black") 
+  
   #Map
   global_map <- ggplot() +
     geom_sf(data = world, fill = "#F5F5F5", lwd = 0.05) +
+    # geom_sf(data = full_SAR_data, aes(color = matched_category),shape = ".", size = 0.001, alpha = 0.01) + 
+    # scale_color_manual(values = matched_category_colors, na.value = "gray") +
     geom_sf(data = mpa_wdpa %>% sf::st_transform(crs = "ESRI:54030"), fill = "#43a9d1", color = "black") + 
     theme_void() +
     theme(plot.margin = grid::unit(c(0, 0, 0, 0), "cm")) 

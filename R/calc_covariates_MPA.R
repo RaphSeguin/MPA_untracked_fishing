@@ -68,7 +68,7 @@ calc_covariates_MPA <- function(mpa_wdpa){
   #Add GDP
   #Load gdp
   gdp <- raster("data/covariates/GDP_per_capita_PPP_1990_2015_v2.nc")
-  gdp <- projectRaster(gdp, crs = crs(MPA_covariates))
+  gdp <- projectRaster(gdp, crs = crs(mpa_covariates))
   #
   # Convert GDP raster to points, keeping only non-NA values
   gdp_points <- rasterToPoints(gdp, spatial = TRUE)
@@ -77,10 +77,10 @@ calc_covariates_MPA <- function(mpa_wdpa){
   gdp_points_sf <- st_as_sf(gdp_points)
 
   # Find the index of the nearest GDP point for each MPA
-  nearest_gdp_indices <- st_nearest_feature(MPA_covariates, gdp_points_sf)
+  nearest_gdp_indices <- st_nearest_feature(mpa_covariates, gdp_points_sf)
 
   # Extract the nearest GDP values using the indices
-  MPA_covariates$gdp <- gdp_points_sf$Gross.Domestic.Production..GDP..per.capita..PPP.[nearest_gdp_indices]
+  mpa_covariates$gdp <- gdp_points_sf$Gross.Domestic.Production..GDP..per.capita..PPP.[nearest_gdp_indices]
   # 
   # #Add LME and MEOW
   # lme <- st_join(st_centroid(mpa_covariates), LME %>% dplyr::select(LME_NAME), join = st_nearest_feature) 
@@ -109,7 +109,7 @@ calc_covariates_MPA <- function(mpa_wdpa){
     st_as_sf(coords = c("long","lat"), crs = 4326) %>%
     dplyr::select(c( HDI, MarineEcosystemDependency, travel_time, hf))
 
-  MPA_covariates <- st_join(st_centroid(MPA_covariates), old_covariates, join = st_nearest_feature)
+  MPA_covariates <- st_join(st_centroid(mpa_covariates), old_covariates, join = st_nearest_feature)
 
   #Add number of boats as covariates
   MPA_SAR_data_2022 <- SAR_stats_2022 %>%
@@ -126,7 +126,7 @@ calc_covariates_MPA <- function(mpa_wdpa){
                   unmatched_fishing_2023 = unmatched_fishing, 
                   sum_all_2023 = sum_all)
   
-  MPA_covariates <- mpa_covariates %>%
+  MPA_covariates <- MPA_covariates %>%
     left_join(MPA_SAR_data_2022, by = "id_iucn") %>%
     left_join(MPA_SAR_data_2023, by = "id_iucn") %>%
     dplyr::filter(id_iucn %in% all_mpas_SAR$id_iucn) 

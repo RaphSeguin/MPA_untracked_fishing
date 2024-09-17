@@ -24,6 +24,8 @@ model_vessel_size <- function(mpa_vessel_model){
                      family = gaussian(), 
                      control.HLfit = list(NbThreads = 6))
   
+  save(mod_spamm_size, file = "output/mod_spamm_size.Rdata")
+  
   mod_spamm_size_output <- summary(mod_spamm_size, details = list(p_value = TRUE))$beta_table %>%
     as.data.frame() %>%
     rownames_to_column("Variable") %>%
@@ -61,8 +63,6 @@ model_vessel_size <- function(mpa_vessel_model){
   
   write.csv(mod_spamm_size_output, "figures/supp/mod_spamm_size.csv")
   
-  save(mod_spamm_size, file = "output/mod_spamm_size.Rdata")
-  
-  
+  return(mod_spamm_size)
   
 }

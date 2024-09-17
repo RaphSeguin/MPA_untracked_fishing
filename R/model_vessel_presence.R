@@ -1,4 +1,4 @@
-model_vessel_presence <- function(){
+model_vessel_presence <- function(mpa_vessel_model){
   
   mpa_vessel_model$iucn_cat <- relevel(mpa_vessel_model$iucn_cat, ref = "VI")
   
@@ -15,7 +15,7 @@ model_vessel_presence <- function(){
   
   #Compute AUC
   predicted_probs <- predict(mod_spamm_binomial, type = "response",re.form=NA)
-  roc_curve <- roc((mpa_vessel_model)$SAR_presence, predicted_probs)
+  roc_curve <- pROC::roc((mpa_vessel_model)$SAR_presence, predicted_probs)
   auc_value <- auc(roc_curve)
   auc_value
   
@@ -62,5 +62,7 @@ model_vessel_presence <- function(){
   write.csv(mod_spamm_binomial_output, "figures/supp/mod_spamm_binomial_output.csv")
   
   plot_and_save_partial_effects(mod_spamm_binomial, mpa_vessel_model, "mod_spamm_binomial")
+  
+  return(mod_spamm_binomial)
 
 }

@@ -25,16 +25,16 @@ figures_fishing_predictions <- function(mpa_model,
     filter(fishing_presence_predicted_2022 == "Fishing" | fishing_presence_predicted_2023 == "Fishing") %>%
     filter(SAR_all > 0) %>%
     ggplot() +
-    geom_point(aes(x = log(SAR_matched_all), y = log(AIS_fishing_all), color = "Matched vs AIS"), 
+    geom_point(aes(x = log(SAR_matched_all), y = log(AIS_fishing_all), color = "Tracked vs AIS"), 
                alpha = 0.5, size = 1) +
-    geom_smooth(aes(x = log(SAR_matched_all), y = log(AIS_fishing_all), color = "Matched vs AIS"), 
+    geom_smooth(aes(x = log(SAR_matched_all), y = log(AIS_fishing_all), color = "Tracked vs AIS"), 
                 method = "lm", se = F, size = 1.5) +
     
-    geom_point(aes(x = log(SAR_all), y = log(predicted_fishing_all), color = "Matched and unmatched vs Predicted"), 
+    geom_point(aes(x = log(SAR_all), y = log(predicted_fishing_all), color = "Tracked and untracked vs Predicted"), 
                alpha = 0.5, size = 1) +
-    geom_smooth(aes(x = log(SAR_all), y = log(predicted_fishing_all), color = "Matched and unmatched vs Predicted"), 
+    geom_smooth(aes(x = log(SAR_all), y = log(predicted_fishing_all), color = "Tracked and untracked vs Predicted"), 
                 method = "lm", se = F, size = 1.5) +
-    scale_color_manual(values = c("Matched vs AIS" = "#E28A2A", "Matched and unmatched vs Predicted" = "#384B6A")) +
+    scale_color_manual(values = c("Tracked vs AIS" = "#E28A2A", "Tracked and untracked vs Predicted" = "#384B6A")) +
     labs(x = "Vessel detections", y = "Fishing effort (hours)", 
          color = "Type") +
     theme_minimal(base_size = 15) +
@@ -50,7 +50,6 @@ figures_fishing_predictions <- function(mpa_model,
           panel.border = element_blank(),
           axis.line = element_line(color = "gray70"))
   
-  
   #Mpas with an increase in fishing
   MPA_presence_increase <- MPA_fishing %>%
     left_join(MPA_final_vars %>% dplyr::select(id_iucn, country), by = "id_iucn") %>%
@@ -61,7 +60,7 @@ figures_fishing_predictions <- function(mpa_model,
             difference = n_predicted - n_observed,
             difference_percentage = difference/n_observed * 100) %>%
     ungroup() %>%
-    filter(predicted_fishing_all > 1000)
+    filter(predicted_fishing_all > 500)
   
   #Raw
   raw_increase_presence <- MPA_presence_increase %>%
@@ -95,7 +94,7 @@ figures_fishing_predictions <- function(mpa_model,
             predicted_fishing = sum(predicted_fishing_all)/1000,
             difference_fishing = predicted_fishing - observed_fishing,
             percentage_increase = difference_fishing / observed_fishing * 100) %>%
-    filter(predicted_fishing > 1000) %>%
+    filter(predicted_fishing > 50) %>%
     ungroup() %>%
     na.omit() 
 
@@ -131,8 +130,8 @@ figures_fishing_predictions <- function(mpa_model,
   
   ggsave(percentage_increase_full,
          file = "figures/percentage_increase_full.jpg",
-    width = 210 * 1.75,  # A4 width in mm
-    height = 148.5  * 1.75,  # Half of A4 height in mm
+    width = 210 * 1,  # A4 width in mm
+    height = 148.5  * 1,  # Half of A4 height in mm
     units = "mm", 
     dpi = 300)
   
@@ -150,7 +149,7 @@ figures_fishing_predictions <- function(mpa_model,
             percentage_increase = difference_fishing / observed_fishing * 100,
             predicted_fishing_log = sqrt(predicted_fishing)) %>%
     ungroup() %>%
-    # filter(predicted_fishing > 1000) %>%
+    filter(predicted_fishing > 1000) %>%
     left_join(LME %>% dplyr::select(LME_NAME), by = "LME_NAME") %>%
     st_as_sf() %>%
     sf::st_transform(world_ne, crs="ESRI:54030") %>%
@@ -310,7 +309,6 @@ figures_fishing_predictions <- function(mpa_model,
          height = 148.5,  # Half of A4 height in mm
          units = "mm", 
          dpi = 300)
-  
   
   #For Figure 5
   ggsave(predicted_fishing_map,

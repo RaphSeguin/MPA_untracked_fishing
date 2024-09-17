@@ -32,7 +32,7 @@ plot_performance_distribution <- function(){
     my_custom_theme() + 
     ylim(0,1) +
     labs(x = " ", y = "ROC AUC")
-    
+  
   binomial_performance_plot <- ggarrange(f1_score, precision, recall, roc_auc, nrow = 4)
   
   
@@ -67,7 +67,7 @@ plot_performance_distribution <- function(){
   
   regression_performance_plot <- ggarrange(rmse, mae, medae, r2, nrow = 4)
   
- full_performance <- ggarrange(binomial_performance_plot, regression_performance_plot, ncol = 2)
+  full_performance <- ggarrange(binomial_performance_plot, regression_performance_plot, ncol = 2)
   
   ggsave(full_performance, 
          file = "figures/supp/full_performance.jpg",

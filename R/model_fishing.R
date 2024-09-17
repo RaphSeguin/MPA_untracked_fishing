@@ -1,7 +1,24 @@
 model_fishing <- function(){
   
   #Prep data for models
+  sf::sf_use_s2(F)
   mpa_model <- prep_model_data(MPA_covariates, mpa_wdpa)
+  
+  #Percentage change
+  temp_2022 <- mpa_model %>%
+    st_drop_geometry() %>%
+    mutate(percentage_change_2022 = (AIS_fishing_2022 - AIS_fishing_2021) / AIS_fishing_2021 * 100) %>%
+    filter(AIS_fishing_2021 > 1000 | AIS_fishing_2022 > 1000) %>%
+    filter(percentage_change_2022 > 100)
+  
+  #
+  temp_2023 <- mpa_model %>%
+    st_drop_geometry() %>%
+    mutate(percentage_change_2023 = (AIS_fishing_2023 - AIS_fishing_2022) / AIS_fishing_2022 * 100) %>%
+    filter(AIS_fishing_2023 > 1000 | AIS_fishing_2022 > 1000) %>%
+    filter(percentage_change_2023 > 100)
+  
+  mpa_model <- mpa_model %>% filter(!id_iucn %in% temp_2022$id_iucn) %>% filter(!id_iucn %in% temp_2023$id_iucn)
   
   #-----Binomial model-------
   
@@ -32,7 +49,6 @@ model_fishing <- function(){
 
   #Train and test the binomial model
   binomial_performance_2022 <- cv_binomial_spamm(mpa_model, folds, optimal_cutoff, formula_binomial_2022, "fishing_presence_2022")
-  
   write.csv(binomial_performance_2022, file = "figures/supp/binomial_performance_2022.csv")
   
   binomial_performance_2023 <- cv_binomial_spamm(mpa_model, folds, optimal_cutoff, formula_binomial_2023, "fishing_presence_2023")
@@ -76,7 +92,7 @@ model_fishing <- function(){
   set.seed(982)
   # Create 10-fold cross-validation folds
   folds_regression_2022 <- spatial_clustering_cv(mpa_model_regression_no_val_2022, v = 10)
-  folds_regression_2023 <-spatial_clustering_cv(mpa_model_regression_no_val_2023, v = 10)
+  folds_regression_2023 <- spatial_clustering_cv(mpa_model_regression_no_val_2023, v = 10)
   
   # Cross-validation for regression
   regression_performance_2022 <- cv_regression_spammm(folds_regression_2022, formula_regression_2022, validation_set_2022, "AIS_fishing_2022")
@@ -89,6 +105,9 @@ model_fishing <- function(){
   
   #Check if predictions are realistic
   # predictions_check <- check_realistic_predictions()
+  
+  #Check spatial performance
+  check_spatial_performance()
   
   #Predicting fishing presence and number of fishing hours
   fishing_presence_2022 <- predict_fishing_presence(mpa_model,formula_binomial_2022, optimal_cutoff, 2022)
@@ -109,7 +128,9 @@ model_fishing <- function(){
   
   #Plot figures for both models
   plot_figures_binomial_model(mpa_model, formula_binomial_2022, formula_binomial_2023)
-  plot_figures_regression_model(mpa_model, formula_regression)
+  plot_figures_regression_model(mpa_model_regression, 
+                                mpa_model_regression_2022, mpa_model_regression_2023,
+                                formula_regression_2022,formula_regression_2023)
   
   #Plot figures
   figures_fishing_predictions(mpa_model,fishing_presence_2022, fishing_presence_2023, fishing_hours_2022, fishing_hours_2023)

@@ -75,7 +75,7 @@ plot_and_save_partial_effects <- function(model, data, model_name) {
   
   # Save the plot to a file
   file_name <- paste0("figures/supp/", model_name, "_partial_effects.png")
-  ggsave(file_name, plot_grid, width = 297*2, height = 210*1.5, units ="mm")
+  ggsave(file_name, plot_grid, width = 297*2.2, height = 210*1.5, units ="mm")
   
   # Display the saved plot
   grid.newpage()

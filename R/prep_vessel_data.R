@@ -5,8 +5,7 @@ prep_vessel_data <- function(MPA_final_vars, MPA_covariates, mpa_wdpa){
     dplyr::select(id_iucn, fishing:SAR_presence,average_length) %>%
     st_drop_geometry() %>%
     left_join(mpa_wdpa %>% dplyr::select(c(id_iucn, iucn_cat, marine, parent_iso)), by = "id_iucn") %>%
-    left_join(MPA_covariates %>% dplyr::select(id_iucn:dist_to_shore,
-                                               ais_reception_positions_per_day_class_A:hf), 
+    left_join(MPA_covariates %>% dplyr::select(id_iucn:ais_reception_positions_per_day_class_B), 
               by = "id_iucn") %>%
     st_as_sf() %>%
     # Transform variables

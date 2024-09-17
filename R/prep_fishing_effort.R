@@ -17,6 +17,7 @@ load_and_cast <- function(file) {
 
 # Function to process fishing effort data for a given year and rename the column
 process_fishing_effort <- function(mpa_wdpa, year) {
+  
   path <- here::here("data/GFW_fishing_effort/")
   setwd(path)
   

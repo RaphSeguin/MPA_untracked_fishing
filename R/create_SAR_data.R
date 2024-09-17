@@ -1,6 +1,6 @@
 create_SAR_data <- function(){
   
-  # Specify the base directory containing the year folders
+  # Downloaded from GFW
   path <- "data/SAR_data/"
   
   #Load csv file names

@@ -1,3 +1,4 @@
+
 model_vessels <- function(){
   
   #Prep data for model
@@ -6,7 +7,7 @@ model_vessels <- function(){
   #Model vessel presence
   model_vessel_presence(mpa_vessel_model)
   
- #Model vessel number - all vessels
+  #Model vessel number - all vessels
   model_all_vessels(mpa_vessel_model)
   
   #Model vessel size
@@ -16,3 +17,4 @@ model_vessels <- function(){
   model_unmatched_vessels(mpa_vessel_model)
   
 }
+

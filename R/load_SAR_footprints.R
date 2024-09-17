@@ -1,5 +1,6 @@
 load_SAR_footprints <- function(){
   
+  #Downloaded from global fishing watch
   path <- "data/SAR_footprints/"
   
   #Load csv file names

@@ -22,15 +22,14 @@ figures_fishing_predictions_iucn <- function(mpa_model,
   
   #Mpas with an increase in fishing
   IUCN_presence_increase <- MPA_fishing %>%
-    left_join(MPA_final_vars %>% dplyr::select(id_iucn, iucn_cat), by = "id_iucn") %>%
+    left_join(MPA_final_vars %>% dplyr::select(id_iucn), by = "id_iucn") %>%
     group_by(iucn_cat) %>%
     reframe(predicted_fishing_all = sum(predicted_fishing_all),
             n_observed = sum(presence_observed == "Fishing"),
             n_predicted = sum(presence_predicted == "Fishing"),
             difference = n_predicted - n_observed,
             difference_percentage = difference/n_observed * 100) %>%
-    ungroup() %>%
-    filter(predicted_fishing_all > 1000)
+    ungroup() 
   
   #Raw
   raw_increase_presence <- IUCN_presence_increase %>%
@@ -62,7 +61,7 @@ figures_fishing_predictions_iucn <- function(mpa_model,
   
   # Create the stacked bar plot
   IUCN_increase <- MPA_fishing %>%
-    left_join(MPA_final_vars %>% dplyr::select(id_iucn, iucn_cat), by = "id_iucn") %>%
+    left_join(MPA_final_vars %>% dplyr::select(id_iucn), by = "id_iucn") %>%
     group_by(iucn_cat) %>%
     reframe(observed_fishing = sum(AIS_fishing_all)/1000,
             predicted_fishing = sum(predicted_fishing_all)/1000,

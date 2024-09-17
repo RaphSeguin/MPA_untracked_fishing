@@ -9,8 +9,8 @@ figure_2 <- function(SAR_stats){
                       guide = "none") + 
     theme_minimal(base_size = 14) +
     theme(legend.position="none") +
-    labs(x = "Sum of matched vessel detections",
-         y = "Sum of unmatched vessel detections",
+    labs(x = "Sum of tracked vessel detections",
+         y = "Sum of untracked vessel detections",
          fill = "IUCN category") +
     guides(fill=guide_legend(nrow=4,byrow=TRUE)) )
   
@@ -24,25 +24,26 @@ figure_2 <- function(SAR_stats){
     geom_boxplot(alpha = 0.7) +
     scale_fill_manual(values = legend,breaks =c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported","EEZ")) + 
     labs(x = " ",
-         y = "Density of unmatched vessel detections",
+         y = "Density of untracked vessel detections",
          fill = "IUCN Category")+
     theme_minimal(base_size = 14) +
-    theme(axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank()) +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    # theme(axis.title.x=element_blank(),
+    #       axis.text.x=element_blank(),
+    #       axis.ticks.x=element_blank()) +
     theme(legend.position="top") )
   
   # ggsave(figure_2, file = "figures/figure_2.jpg", width = 210, height = 297, units = "mm", dpi = 300)
   (ratio_iucn <- MPA_final_vars %>%
     bind_rows(EEZ_final_vars) %>%
     filter(iucn_cat != "III") %>%
-    ggplot(aes(factor(iucn_cat,level = level_order), unmatched_ratio, fill = iucn_cat)) + 
+    ggplot(aes(factor(iucn_cat,level = level_order), unmatched_ratio * 100, fill = iucn_cat)) + 
     geom_jitter(size = 0.1,alpha = 0.2) + 
     geom_boxplot(alpha = 0.7) +
     scale_fill_manual(values = legend,breaks =c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported","EEZ")) + 
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
     labs(x = " ",
-         y = "Percentage of unmatched vessel detections",
+         y = "Percentage of untracked vessel detections",
          fill = "IUCN Category")+
     theme_minimal(base_size = 14) +
     theme(legend.position = "bottom"))

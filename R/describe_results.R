@@ -160,6 +160,8 @@ describe_results <- function(SAR_stats){
    nrow(fishing_AIS %>% filter(fishing_AIS_presence == "Fishing"))
    nrow(fishing_AIS %>% filter(fishing_AIS_presence == "Fishing"))/nrow(fishing_AIS)
    
+   nrow(fishing_AIS %>% filter(fishing_AIS_presence == "No fishing"))/nrow(fishing_AIS)
+   
    #Correlation between fishing and number of vessels
    temp_cor <- fishing_AIS %>%
      filter(fishing > 0) %>%
@@ -168,8 +170,7 @@ describe_results <- function(SAR_stats){
    cor(log(temp_cor$fishing), log(temp_cor$fishing_AIS))
    
    #Number of MPAs with fishing in 2022 and 2023
-   fishing_AIS_all <- MPA_final_vars %>% 
-     left_join(MPA_covariates %>% dplyr::select(id_iucn, AIS_fishing_2022, AIS_fishing_2023), by = "id_iucn") %>%
+   fishing_AIS_all <- mpa_model %>% 
      mutate(fishing_AIS = AIS_fishing_2022 + AIS_fishing_2023,
             fishing_AIS_presence = as.factor(ifelse(fishing_AIS == 0, "No fishing","Fishing")))
    

@@ -69,5 +69,7 @@ model_unmatched_vessels <- function(mpa_vessel_model){
   
   write.csv(mod_spamm_unmatched_output, file = "figures/supp/mod_spamm_unmatched_output.csv")
   
+  return(mod_spamm_unmatched)
+  
   
 }

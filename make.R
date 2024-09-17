@@ -4,7 +4,7 @@
 #-----------------Loading packages-------------------
 
 pkgs <- c("tidyverse","here","lme4","broom","tidymodels","parallel","cowplot","ggspatial","sf","RColorBrewer","ggridges","plotly","heatmaply","parsedate","birk","ggthemes","MASS","automap","pbmcapply","janitor","gfwr","arrow","beepr","sfarrow","corrplot","DHARMa",
-          "harrypotter","wesanderson","ranger","missForest","rgdal","countrycode","ggpubr","data.table","randomForestExplainer","spatialRF","spaMM","DHARMa","glmmTMB","performance","spdep","rstatix","formatdown","ggrepel","tidync","nngeo","ncdf4","e1071",
+          "harrypotter","wesanderson","ranger","missForest","rgdal","countrycode","ggpubr","data.table","randomForestExplainer","spatialRF","spaMM","DHARMa","glmmTMB","performance","spdep","rstatix","formatdown","ggrepel","tidync","nngeo","ncdf4","e1071","pROC",
           "units","xml2","XML","rnaturalearth","ggExtra","raster","exactextractr","gstat","magrittr","scales","grid","gridExtra","XML","imputeTS","rgeos","visreg","piecewiseSEM","furrr","future","yardstick","kernelshap","gbm","spatialsample","s2","merTools")
 nip <- pkgs[!(pkgs %in% installed.packages())]
 nip <- lapply(nip, install.packages, dependencies = TRUE)
@@ -25,7 +25,11 @@ setwd(here())
 #Joining SAR_data with eez data which is not MPA
 #eez data from https://www.marineregions.org/downloads.php
 eez <- st_read("data/World_EEZ_v12_20231025/eez_v12.shp")
+
+#LMEs downloaded from https://www.sciencebase.gov/catalog/item/55c77722e4b08400b1fd8244
 LME <- st_read("data/LME66/LMEs66.shp")
+
+#MEOW https://academic.oup.com/bioscience/article/57/7/573/238419
 MEOW <- st_read("data/MEOW-TNC/meow_ecos.shp") %>% dplyr::select(ECOREGION)
 
 #World for maps
@@ -42,6 +46,8 @@ SAR_footprints <- load_SAR_footprints()
 prep_mpa_data()
 
 # #Unionzed MPA for country comparison
+load("data/mpa_wdpa.Rdata")
+
 MPA_union <- mpa_wdpa %>%
   group_by(parent_iso) %>%
   reframe(geometry = st_union(geometry)) %>%
@@ -67,7 +73,6 @@ SAR_data_sf <- SAR_data %>% st_as_sf(coords = c("lon","lat"),crs = 4326)
 lonlat = cbind(lon = SAR_data$lon,lat = SAR_data$lat)
 
 #Create grid
-# SAR_grid <- create_grid() 
 SAR_mpa <- st_join(SAR_data_sf %>% cbind(lonlat), mpa_wdpa,left = F) %>%
   #replacing MPA area with REAL mpa area
   dplyr::select(-gis_m_area) %>%
@@ -87,7 +92,6 @@ SAR_stats <- calculate_stats_mpa()
 
 #Calculate stats for MPA data per year
 SAR_mpa_final <- normalize_detections(SAR_mpa, SAR_footprints_sf)
-
 save(SAR_mpa_final, file = "output/SAR_mpa_final.Rdata")
 
 SAR_stats_2022 <- calculate_stats(SAR_mpa_final, 2022)

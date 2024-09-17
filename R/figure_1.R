@@ -29,10 +29,7 @@ figure_1 <- function(SAR_stats){
            y = "Density of vessel detections",
            fill = "IUCN Category") +
       my_custom_theme() +
-      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
-      theme(axis.title.x=element_blank(),
-            axis.text.x=element_blank(),
-            axis.ticks.x=element_blank()))
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)))
   
   ggsave(total_iucn, file = "figures/total_iucn.jpg", width = 350, height = 210, units = "mm", dpi = 600)
   

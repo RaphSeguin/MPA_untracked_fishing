@@ -1,57 +1,122 @@
-# 
-# # Load World Map Data
-# world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
-# 
-# # Simplify Global Map by thinning vessel detections
-# all_sar_thinned <- all_sar %>%
-#   sample_frac(0.1)  # Randomly sample 10% of the data for better global readability
-# 
-# # Base Global Map
-# global_map <- ggplot() +
-#   geom_sf(data = world, fill = "lightgrey", color = NA) +
-#   geom_sf(data = MPA_sf, fill = "lightblue", color = NA, alpha = 0.4) +
-#   geom_sf(data = all_sar_thinned, aes(color = matched_category), shape = ".", alpha = 0.3) +
-#   scale_color_manual(values = c("fishing" = "darkorange", "unmatched_fishing" = "deepskyblue")) +
-#   theme_map() +
-#   theme(legend.position = "bottom",
-#         plot.title = element_text(hjust = 0.5, face = "bold", size = 14)) +
-#   labs(title = "Global Overview of Vessel Detections in MPAs")
-# 
-# # Function to Create Insets
-# create_inset <- function(region_bbox, title) {
-#   ggplot() +
-#     geom_sf(data = st_crop(world, region_bbox), fill = "lightgrey", color = NA) +
-#     geom_sf(data = st_crop(MPA_sf, region_bbox), fill = "lightblue", color = NA, alpha = 0.4) +
-#     geom_sf(data = st_crop(all_sar, region_bbox), aes(color = matched_category), shape = ".", alpha = 0.6) +
-#     scale_color_manual(values = c("fishing" = "darkorange", "unmatched_fishing" = "deepskyblue")) +
-#     theme_map() +
-#     theme_void() +
-#     labs(title = title)
-# }
-# 
-# # Define bounding boxes for each region
-# bbox_med <- st_bbox(c(xmin = -10, xmax = 40, ymin = 30, ymax = 46), crs = st_crs(world))
-# bbox_hokkaido <- st_bbox(c(xmin = 140, xmax = 150, ymin = 40, ymax = 46), crs = st_crs(world))
-# bbox_gbr <- st_bbox(c(xmin = 142, xmax = 154, ymin = -24, ymax = -10), crs = st_crs(world))
-# bbox_ca <- st_bbox(c(xmin = -90, xmax = -60, ymin = 5, ymax = 20), crs = st_crs(world))
-# 
-# # Create Insets
-# mediterranean_map <- create_inset(bbox_med, "North-West Mediterranean")
-# hokkaido_map <- create_inset(bbox_hokkaido, "Hokkaidō (Japan)")
-# gbr_map <- create_inset(bbox_gbr, "Great Barrier Reef (Australia)")
-# ca_map <- create_inset(bbox_ca, "Central America")
-# 
-# # Arrange the Global Map with Insets
-# final_plot <- ggdraw() +
-#   draw_plot(global_map, 0, 0, 1, 1) +
-#   draw_plot(mediterranean_map, 0.05, 0.55, 0.4, 0.4) +
-#   draw_plot(hokkaido_map, 0.55, 0.55, 0.4, 0.4) +
-#   draw_plot(gbr_map, 0.55, 0.05, 0.4, 0.4) +
-#   draw_plot(ca_map, 0.05, 0.05, 0.4, 0.4)
-# 
-# # Save the Final Plot
-# ggsave(final_plot, file = "figures/global_with_insets_final.jpg", 
-#        width = 297, 
-#        height = 210, 
-#        units = "mm", 
-#        dpi = 300)
+global_map <- function(){
+  
+  #full SAR data
+  full_SAR_data <- SAR_stats %>%
+    bind_rows(SAR_eez_stats %>% dplyr::rename(parent_iso = "ISO_SOV1")) %>%
+    distinct(unique_id, .keep_all = T) %>%
+    left_join(SAR_data_sf %>% dplyr::select(unique_id), by = "unique_id") %>%
+    st_as_sf() %>%
+    mutate(continent = countrycode(parent_iso, origin = "iso3c", destination = "continent")) %>%
+    filter(!is.na(continent))
+  
+  #Divide south and north america
+  north_america <- c("USA", "CAN", "MEX", "BLZ", "GTM", "SLV", "HND", "NIC", "CRI", "PAN",
+                     "BHS", "CUB", "DOM", "HTI", "JAM", "TTO", "BRB", "GRD", "LCA", "VCT",
+                     "DMA", "ATG", "KNA")
+  
+  south_america <- c("BRA", "ARG", "CHL", "COL", "PER", "VEN", "ECU", "BOL", "PRY", "URY", 
+                     "GUY", "SUR")
+  
+  
+  full_SAR_data$continent <- ifelse(full_SAR_data$parent_iso %in% north_america, "North America", 
+                         ifelse(full_SAR_data$parent_iso %in% south_america, "South America", full_SAR_data$continent))
+  
+  #Region wide analysis
+  region_SAR <- full_SAR_data %>%
+    st_drop_geometry() %>%
+    group_by(continent, matched_category) %>%
+    summarize(continent_count = sum(normalized_detection,na.rm=T)) %>%
+    ungroup() %>%
+    pivot_wider(names_from = "matched_category", values_from = "continent_count") %>%
+    mutate(percentage_tracked = fishing/(fishing+unmatched) * 100)
+  
+  
+  #Prep data for map
+  colors <- c("#ffc6c4", "#f4a3a8", "#e38191", "#cc607d", "#ad466c", "#8b3058", "#672044")
+  
+  world <- rnaturalearth::ne_countries(scale = "large", returnclass = "sf") %>%
+    filter(name != "Antarctica") %>%
+    # Convert WGS84 to projected crs (here Robinson)
+    sf::st_transform(crs = "ESRI:54030")
+  
+  study_area <- st_read("data/study_area_clean.shp")
+  
+  #Map
+  global_map <- ggplot() +
+    geom_sf(data = world, fill = "#F5F5F5", lwd = 0.05) +
+    geom_sf(data = mpa_wdpa %>% sf::st_transform(crs = "ESRI:54030"), fill = "#43a9d1", color = "black") + 
+    theme_void() +
+    theme(plot.margin = grid::unit(c(0, 0, 0, 0), "cm")) 
+  
+  ggsave(global_map, 
+         file = "figures/global_map.jpg",
+         width = 297*1.5,
+         height = 105*1.5,
+         dpi = 600,
+         units = "mm")
+  
+  #Now create inset maps
+  
+  world_4326 <- rnaturalearth::ne_countries(scale = "large", returnclass = "sf") %>%
+    filter(name != "Antarctica")
+  
+  # Function to crop data and create a ggplot map for a specific region
+  plot_region_map <- function(full_SAR_data, mpa_wdpa, world_4326, bbox, region_name) {
+  
+    # Crop the data for the specified region
+    cropped_data <- list(
+      SAR = st_crop(full_SAR_data, bbox),
+      MPA = st_crop(mpa_wdpa, bbox),
+      World = st_crop(world_4326, bbox)
+    )
+    
+    #Matched category color
+    matched_category_colors <- c("fishing" = "#E69F00", "unmatched" = "black") 
+    
+    # Create the ggplot
+    region_map <- ggplot() +
+      geom_sf(data = cropped_data$MPA, fill = "#43a9d1", color = "black") + 
+      # geom_sf(data = cropped_data$area, fill = "lightgrey", color = "darkred", lwd = 0.5,alpha = 0.2) +
+      geom_sf(data = cropped_data$World, fill = "#F5F5F5", lwd = 0.1) +
+      # scale_color_manual(values = legend,
+      #                   breaks =c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported","EEZ")) +
+      # ggnewscale::new_scale_color() + 
+      geom_sf(data = cropped_data$SAR, aes(color = matched_category), size = 0.3, alpha = 0.5) +
+      scale_color_manual(values = matched_category_colors, na.value = "gray") +
+      # coord_sf(xlim = c(bbox["xmin"], bbox["xmax"]), ylim = c(bbox["ymin"], bbox["ymax"])) +  # Set the limits using bbox
+      theme_void() +
+      theme(
+        legend.position = "none",
+        plot.margin = grid::unit(c(0, 0, 0, 0), "cm")) +
+      # Add the black border using geom_rect based on bbox
+      annotate("rect", 
+               xmin = bbox["xmin"], xmax = bbox["xmax"], 
+               ymin = bbox["ymin"], ymax = bbox["ymax"], 
+               color = "black", fill = NA, linewidth = 0.5)
+    
+    # Save the plot using the region name
+    ggsave(region_map, file = paste0("figures/", region_name, "_map.jpg"), 
+           width = 297,
+           height = 210,
+           units = "mm",
+           dpi = 600)
+      
+  }
+  
+  # Define the bounding box for the North-West Mediterranean region (in EPSG:4326)
+  bbox_nw_mediterranean <- st_bbox(c(xmin = 0, ymin = 38, xmax = 21, ymax = 46), crs = st_crs(full_SAR_data))
+  # Define the bounding box for Hokkaidō (Japan)
+  bbox_hokkaido <- st_bbox(c(xmin = 138, ymin = 41, xmax = 147, ymax = 46), crs = st_crs(full_SAR_data))
+  # Great Barrier Reef (Australia)
+  bbox_great_barrier_reef <- st_bbox(c(xmin = 141, ymin = -26, xmax = 160, ymax = -10), crs = st_crs(full_SAR_data))
+  # Central America
+  bbox_central_america <- st_bbox(c(xmin = -120, ymin = 4, xmax = -54, ymax = 29), crs = st_crs(full_SAR_data))
+  
+  # Plot and save the maps
+  nw_mediterranean_map <- plot_region_map(full_SAR_data, mpa_wdpa, world_4326, bbox_nw_mediterranean, "north_west_mediterranean")
+  hokkaido_map <- plot_region_map(full_SAR_data, mpa_wdpa, world_4326, bbox_hokkaido, "hokkaido")
+  great_barrier_reef_map <- plot_region_map(full_SAR_data, mpa_wdpa, world_4326, bbox_great_barrier_reef, "great_barrier_reef")
+  central_america_map <- plot_region_map(full_SAR_data, mpa_wdpa, world_4326, bbox_central_america, "central_america")
+  
+  
+}

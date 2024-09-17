@@ -12,7 +12,7 @@ calc_SAR_outside_mpa <- function(SAR_data_sf, eez_no_mpa){
     filter(category %in% c("fishing", "unmatched_fishing")) %>%
     # Also if unmatched_fishing and length higher than 90% quantile then delete it 
     filter(length_m < 145) %>%
-    filter(length_m < quantile(SAR_mpa_final$length_m, 0.95, na.rm = T)) %>%
+    filter(length_m < quantile(SAR_data_sf$length_m, 0.95, na.rm = T)) %>%
     #Convert to sf and join with EEZ
     st_as_sf(coords = c("lon","lat"), crs = 4326) %>%
     st_join(eez_no_mpa, left = F) %>%
