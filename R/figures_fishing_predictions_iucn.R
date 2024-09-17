@@ -18,8 +18,6 @@ figures_fishing_predictions_iucn <- function(mpa_model,
                                                  "Fishing","No_fishing")),
            predicted_fishing_all = predicted_fishing_effort_2022 + predicted_fishing_effort_2023)
   
-  
-  
   #Mpas with an increase in fishing
   IUCN_presence_increase <- MPA_fishing %>%
     left_join(MPA_final_vars %>% dplyr::select(id_iucn), by = "id_iucn") %>%
@@ -83,7 +81,7 @@ figures_fishing_predictions_iucn <- function(mpa_model,
   
   #Express as percentage of increase
   IUCN_increase <- MPA_fishing %>%
-    left_join(MPA_final_vars %>% dplyr::select(id_iucn, iucn_cat), by = "id_iucn") %>%
+    left_join(MPA_final_vars %>% dplyr::select(id_iucn), by = "id_iucn") %>%
     group_by(iucn_cat) %>%
     reframe(observed_fishing = sum(AIS_fishing_all),
             predicted_fishing = sum(predicted_fishing_all),

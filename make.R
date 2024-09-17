@@ -120,8 +120,6 @@ save(all_mpas_SAR, file = "output/all_mpas_SAR.Rdata")
 #Function to download GFW data
 download_GFW_data()
 
-
-
 #----MODELLING-------
 
 level_order <- c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported","EEZ") 

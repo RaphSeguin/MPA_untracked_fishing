@@ -1,6 +1,5 @@
 predict_fishing_hours <- function(mpa_model, mpa_model_regression, formula_regression, mpa_fishing_presence, year){
   
-  
   # Dynamically create the relevant column names based on the year
   fishing_log_col <- paste0("fishing_", year, "_log")
   sum_all_log_col <- paste0("sum_all_", year, "_log")
@@ -8,7 +7,6 @@ predict_fishing_hours <- function(mpa_model, mpa_model_regression, formula_regre
   fishing_presence_predicted_col <- paste0("fishing_presence_predicted_", year)
   AIS_fishing_col <- paste0("AIS_fishing_", year)
   predicted_fishing_effort_col <- paste0("predicted_fishing_effort_", year)
-  
   #Train full model
   mod_regression_final <- lmer(formula_regression, data = mpa_model_regression)
   
@@ -48,8 +46,8 @@ predict_fishing_hours <- function(mpa_model, mpa_model_regression, formula_regre
     dplyr::select(-all_of(fishing_presence_predicted_col))
   
   # Predict on the new data
-  score <- predict(mod_regression_final, newdata = mpa_model_predict_regression, re.form=~0, allow.new.levels=T)
-  
+  score <- predict(mod_regression_final, newdata = mpa_model_predict_regression, re.form= ~0, allow.new.levels=T)
+
   # Backtransform the predictions using the exponential function
   mpa_model_predict_regression[[predicted_fishing_effort_col]] <- as.vector(exp(score))
   

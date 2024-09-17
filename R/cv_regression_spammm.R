@@ -14,8 +14,8 @@ cv_regression_spammm <- function(folds_regression, formula_regression, validatio
                # control.HLfit = list(NbThreads = 4))
     
     # Predict on the test set and validation set
-    test_preds_log <- predict(mod, newdata = test, re.form = NA)
-    val_preds_log <- predict(mod, newdata = validation_set, re.form = NA)
+    test_preds_log <- predict(mod, newdata = test, re.form = ~0 )
+    val_preds_log <- predict(mod, newdata = validation_set, re.form = ~0 )
     
     # Backtransform predictions using the exponential function
     test$preds <- exp(test_preds_log)
