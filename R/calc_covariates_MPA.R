@@ -46,25 +46,6 @@ calc_covariates_MPA <- function(mpa_wdpa){
   
   mpa_covariates$dist_to_shore <- dist_from_shore
 
-  # #Water area that lies within the shelf, slope, and abyssal zones
-  # abyssal <- raster("data/covariates/Abyssal_res_05_annual_years_2019_Clim_scen_historical_global.asc")
-  # shelf <- raster("data/covariates/Shelf_res_05_annual_years_2019_Clim_scen_historical_global.asc")
-  # slope <- raster("data/covariates/Slope_res_05_annual_years_2019_Clim_scen_historical_global.asc")
-  # 
-  # abyssal_mpa <- exact_extract(abyssal, mpa_covariates, 'mean', progress = TRUE)
-  # shelf_mpa <- exact_extract(shelf, mpa_covariates, 'mean', progress = TRUE)
-  # slope_mpa <- exact_extract(slope, mpa_covariates, 'mean', progress = TRUE)
-  # 
-  # mpa_covariates$abyssal <- abyssal_mpa
-  # mpa_covariates$shelf <- shelf_mpa
-  # mpa_covariates$slope <- slope_mpa
-  # 
-  # #Sediment
-  # sediment <- raster("data/covariates/Sediment_thickness_res_05_annual_years_1997_Clim_scen_historical_global.asc")
-  # sediment_mpa <-exact_extract(sediment, mpa_covariates, 'mean', progress = TRUE)
-  # 
-  # mpa_covariates$sediment <- sediment_mpa
-  # 
   #Add GDP
   #Load gdp
   gdp <- raster("data/covariates/GDP_per_capita_PPP_1990_2015_v2.nc")
@@ -82,26 +63,6 @@ calc_covariates_MPA <- function(mpa_wdpa){
   # Extract the nearest GDP values using the indices
   mpa_covariates$gdp <- gdp_points_sf$Gross.Domestic.Production..GDP..per.capita..PPP.[nearest_gdp_indices]
   # 
-  # #Add LME and MEOW
-  # lme <- st_join(st_centroid(mpa_covariates), LME %>% dplyr::select(LME_NAME), join = st_nearest_feature) 
-  # mpa_covariates$lme <- lme$LME_NAME
-  # 
-  # ecoregion <- st_join(st_centroid(mpa_covariates), MEOW %>% dplyr::select(ECOREGION), join = st_nearest_feature) 
-  # mpa_covariates$ecoregion <- ecoregion$ECOREGION
-  # 
-  # #Add wind
-  # grid <- read.csv("data/global_grid.csv")
-  # wind <- read.csv("data/covariates/remss_wind.csv") %>%
-  #   left_join(grid, by = "pixel_id") %>%
-  #   st_as_sf(wkt = "geometry_wkt", crs = 4326) %>%
-  #   dplyr::select(wind_speed_ms_mean, wind_speed_ms_sd)
-  # 
-  # mpa_wind <- mpa_covariates %>%
-  #   st_join(wind, join = st_nearest_feature)
-  # 
-  # mpa_covariates$mean_wind_speed <-mpa_wind$wind_speed_ms_mean
-  # mpa_covariates$sd_wind_speed <-mpa_wind$wind_speed_ms_sd
-  
   # Load previous covariates
   load("data/IUCN.I.VI.AMP.Rdata")
 
@@ -131,29 +92,6 @@ calc_covariates_MPA <- function(mpa_wdpa){
     left_join(MPA_SAR_data_2023, by = "id_iucn") %>%
     dplyr::filter(id_iucn %in% all_mpas_SAR$id_iucn) 
   
-  # #Average length of fishing vessels
-  # average_length_all <- SAR_stats %>%
-  #   group_by(id_iucn) %>%
-  #   reframe(length_all = mean(length_m, na.rm=T)) %>%
-  #   ungroup() 
-  # 
-  # average_length_matched <- SAR_stats %>%
-  #   filter(matched_category == "fishing") %>%
-  #   group_by(id_iucn) %>%
-  #   reframe(length_matched = mean(length_m, na.rm=T)) %>%
-  #   ungroup() 
-  # 
-  # average_length_unmatched <- SAR_stats %>%
-  #   filter(matched_category == "unmatched") %>%
-  #   group_by(id_iucn) %>%
-  #   reframe(length_unmatched = mean(length_m, na.rm=T)) %>%
-  #   ungroup() 
-  # 
-  # MPA_covariates <- MPA_covariates %>%
-  #   left_join(average_length_all, by = "id_iucn") %>%
-  #   left_join(average_length_matched, by = "id_iucn") %>%
-  #   left_join(average_length_unmatched, by = "id_iucn")
-  
   #ADD AIS RECEPTION
   ais_reception <- read.csv("data/covariates/gfw_reception_quality.csv") %>%
     st_as_sf(coords = c("lon","lat"), crs = 4326) 
@@ -161,12 +99,6 @@ calc_covariates_MPA <- function(mpa_wdpa){
   mpa_reception <- st_join(mpa_wdpa %>% st_centroid(), ais_reception, join = st_nearest_feature) %>%
     st_drop_geometry() %>%
     dplyr::select(id_iucn,ais_reception_positions_per_day_class_A,ais_reception_positions_per_day_class_B )
-  
-  #Add number of non fishing vessels
-  # MPA_covariates <- MPA_covariates %>%
-  #   left_join(mpa_SAR_non_fishing, by = "id_iucn") %>%
-  #   mutate(n_non_fishing = ifelse(is.na(n_non_fishing), 0, n_non_fishing)) %>%
-  #   left_join(mpa_reception, by = "id_iucn")
   
   #Add fishing effort from 2021 and 2022 as a covariate
   MPA_wdpa_fishing_2021 <- process_fishing_effort(mpa_wdpa, 2021)

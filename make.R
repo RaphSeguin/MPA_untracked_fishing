@@ -117,6 +117,11 @@ all_mpas_SAR <- mpa_wdpa %>%
 
 save(all_mpas_SAR, file = "output/all_mpas_SAR.Rdata")
 
+#Function to download GFW data
+download_GFW_data()
+
+
+
 #----MODELLING-------
 
 level_order <- c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported","EEZ") 
@@ -158,9 +163,10 @@ model_fishing()
 #---data analysis----
 
 #Make supplementary
-make_supp() 
+make_supp(MPA_final_vars) 
 
 #Print various statistics on MPA data
-describe_results(SAR_stats)
+#open the function to check results
+describe_results()
 
 

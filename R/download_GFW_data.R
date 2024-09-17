@@ -11,53 +11,10 @@ download_GFW_data <- function(mpa_wdpa){
   
   mpa_geometry <- mpa_wdpa_union_country$geometry
   
-  #2020
-  failed_iterations <- c()
-  
-  # Download GFW fishing effort
-  fishing_effort_2020 <- lapply(1:length(mpa_geometry), function(i){
-    
-    Sys.sleep(15)
-    
-    print(paste0("Actual I: ", i))
-    
-    temp_geometry <- mpa_geometry[i] %>%  st_as_sf()
-    
-    # Fishing effort
-    fishing_effort_mpa <- tryCatch({
-      get_raster(spatial_resolution = 'HIGH',
-                 temporal_resolution = 'YEARLY',
-                 group_by = 'FLAG',
-                 start_date = "2020-01-01",
-                 end_date = "2020-12-31",
-                 region = temp_geometry,
-                 region_source = 'USER_SHAPEFILE',
-                 key = key)
-    }, error = function(e) {
-      # If an error occurs, append the index to failed_iterations
-      failed_iterations <<- c(failed_iterations, i)
-      # Return NULL to skip the save step
-      return(NULL)
-    })
-    
-    # If fishing_effort_mpa is not NULL, save the object
-    if (!is.null(fishing_effort_mpa)) {
-      save(fishing_effort_mpa, file = paste0("data/GFW_fishing_effort/2020_fishing_effort_mpa",i,".Rdata"))
-    }
-  })
-  
   #2021
   # Initialize a vector to store the indices of failed iterations
   #missing
-  
-  #9 - 8323
-  # 21/22 - 8493/8465
-  # #42 5676
-  ##57 5679
-  #65 8480
-  ##74 8487
-  #102-103 5686 - 8455
-  #139 8463 - 8453
+  failed_iterations <- c()
   
   # Download GFW fishing effort
   fishing_effort_2021 <- lapply(63:length(mpa_geometry), function(i){
@@ -87,7 +44,7 @@ download_GFW_data <- function(mpa_wdpa){
     
     # If fishing_effort_mpa is not NULL, save the object
     if (!is.null(fishing_effort_mpa)) {
-      save(fishing_effort_mpa, file = paste0("data/GFW_fishing_effort/2021_fishing_effort_mpa",i,"_2.Rdata"))
+      save(fishing_effort_mpa, file = paste0("data/GFW_fishing_effort/2021_fishing_effort_mpa",i,".Rdata"))
     }
   })
   

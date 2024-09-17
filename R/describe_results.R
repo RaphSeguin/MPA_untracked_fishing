@@ -1,4 +1,4 @@
-describe_results <- function(SAR_stats){
+describe_results <- function(){
  
    load("output/SAR_eez_stats.Rdata")
    load("output/SAR_stats.Rdata")
