@@ -2,21 +2,7 @@ make_supp <- function(MPA_final_vars){
   
   #World for maps
   world <- rnaturalearth::ne_countries(scale = "large")
-  
-  #Base theme
-  my_custom_theme <- function() {
-    theme_minimal(base_size = 15) +
-      theme(
-        text = element_text(family = "Times New Roman"),
-        plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
-        axis.title = element_text(size = 16),
-        axis.text = element_text(size = 12),
-        legend.position = "bottom",
-        legend.title = element_text(size = 16),
-        legend.text = element_text(size = 14)
-      )
-  }
-  
+
     #Number of MPAs by IUCN category using a bar plot 
   n_mpas_iucn_cat <- ggplot(MPA_final_vars, aes(x = fct_rev(fct_infreq(factor(iucn_cat, levels = level_order))), fill = iucn_cat)) +
     geom_bar(width = 0.7) +
@@ -139,7 +125,7 @@ make_supp <- function(MPA_final_vars){
     geom_boxplot() +
     scale_x_discrete(breaks = seq(min(MPA_final_vars$status_yr), max(MPA_final_vars$status_yr), by = 10)) +
     labs(x = "MPA Creation Year",
-         y = "Number of fishing vessel detections") +
+         y = "Number of fishing vessel detections (log-scale)") +
     my_custom_theme() +
     theme(
       legend.position = "none"
@@ -153,7 +139,7 @@ make_supp <- function(MPA_final_vars){
     geom_boxplot() +
     scale_x_discrete(breaks = seq(min(MPA_final_vars$status_yr), max(MPA_final_vars$status_yr), by = 10)) +
     labs(x = "MPA Creation Year",
-         y = "Number of untracked fishing vessel detections") +
+         y = "Number of untracked fishing vessel detections (log-scale)") +
     my_custom_theme() +
     theme(
       legend.position = "none"
@@ -449,7 +435,7 @@ make_supp <- function(MPA_final_vars){
     ggplot(aes(factor(size_class,level_order_size), length_m)) + 
     geom_violin() + 
     labs(x = "Size class",
-         y = "Vessel length outside MPAs") +
+         y = "Vessel length outside MPAs (m)") +
     my_custom_theme()
   
   ggsave(size_distribution_EEZ, file = "figures/supp/size_distribution_EEZ.jpg", width = 297, height = 210, units = "mm", dpi = 300)
@@ -465,7 +451,7 @@ make_supp <- function(MPA_final_vars){
     ggplot(aes(factor(size_class,level_order_size), length_m)) + 
     geom_violin() + 
     labs(x = "Size class",
-         y = "Vessel length outside MPAs") +
+         y = "Vessel length outside MPAs (m)") +
     my_custom_theme()
   
   ggsave(size_distribution_MPA, file = "figures/supp/size_distribution_MPA.jpg", width = 297, height = 210, units = "mm", dpi = 300)

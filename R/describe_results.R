@@ -66,6 +66,7 @@ describe_results <- function(){
    write.csv(pairwise_comparisons_unmatched, file = "figures/supp/pairwise_comparisons_unmatched.csv")
    
    pairwise_comparisons_fraction<- EEZ_MPA_stat_test %>%
+     filter(unmatched_ratio > 0) %>%
      dunn_test(unmatched_ratio ~ iucn_cat, p.adjust.method = "bonferroni") %>%
      mutate(
        comparison = paste0(group1, " vs ", group2),
@@ -75,6 +76,36 @@ describe_results <- function(){
    
    write.csv(pairwise_comparisons_fraction, file = "figures/supp/pairwise_comparisons_fraction.csv")
    
+   #Size
+   MPA_Size <- SAR_stats_unique %>%
+     dplyr::filter(iucn_cat %in% c("I","II","III","IV","V","VI")) %>%
+     group_by(iucn_cat, id_iucn) %>%
+     reframe(average_length = mean(length_m, na.rm = T)) %>%
+     ungroup() %>%
+     bind_rows(EEZ_size)
+
+   EEZ_MPA_size <- SAR_eez_stats %>%
+     group_by(SOVEREIGN1) %>%
+     reframe(average_length = mean(length_m, na.rm = T)) %>%
+     ungroup() %>%
+     mutate(iucn_cat = "Outside") %>%
+     bind_rows(EEZ_MPA_Size)
+   
+   #Kruskal
+   kruskal_test <- EEZ_MPA_Size %>%
+     kruskal.test(average_length ~ iucn_cat, data = .) %>%
+     tidy()
+
+   #Dunn
+   pairwise_comparison_size <- EEZ_MPA_Size %>%
+     dunn_test(average_length ~ iucn_cat, p.adjust.method = "bonferroni") %>%
+     mutate(
+       comparison = paste0(group1, " vs ", group2),
+       higher_group = ifelse(statistic > 0, group1, group2)
+     )%>%
+     mutate_if(is.numeric, round, digits = 2)
+   
+   write.csv(pairwise_comparison_size, file = "figures/supp/pairwise_comparison_size.csv")
    
    #Stat MPA managment plan
    MPA_management_stat_test <- MPA_final_vars %>%
@@ -182,11 +213,11 @@ describe_results <- function(){
    sum(fishing_AIS_all$AIS_fishing_2022,na.rm=T) + sum(fishing_AIS_all$AIS_fishing_2023,na.rm=T)
    
    #Results on size
-   range(SAR_stats$length_m)
-   mean(SAR_stats$length_m)
-   sd(SAR_stats$length_m)
+   range(SAR_stats_unique$length_m)
+   mean(SAR_stats_unique$length_m)
+   sd(SAR_stats_unique$length_m)
    
-   iucn_size <- SAR_stats %>%
+   iucn_size <- SAR_stats_unique %>%
      group_by(iucn_cat) %>%
       reframe(mean_size = mean(length_m),
              sd_size = sd(length_m)) %>%
@@ -195,7 +226,6 @@ describe_results <- function(){
    range(SAR_eez_stats$length_m)
    mean(SAR_eez_stats$length_m)
    sd(SAR_eez_stats$length_m)
-   
    
   
 }

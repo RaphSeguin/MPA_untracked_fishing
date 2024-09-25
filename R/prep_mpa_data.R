@@ -63,6 +63,8 @@ prep_mpa_data <- function() {
     st_union() 
   
   st_write(study_area_clean, dsn = "data/study_area_clean.shp")
+  
+  study_area_clean <- st_read("data/study_area_clean.shp")
 
   mpa_wdpa_nocoastline_clean <- mpa_wdpa_nocoastline %>%
     #remove duplicated values of id

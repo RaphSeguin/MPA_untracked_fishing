@@ -38,6 +38,22 @@ world <- rnaturalearth::ne_countries(scale = "medium")
 #Load and clean SAR detection footpritns
 SAR_footprints <- load_SAR_footprints()
 
+#Theme for plot
+#Base theme
+my_custom_theme <- function() {
+  theme_minimal(base_size = 15) +
+    theme(
+      text = element_text(family = "Times New Roman"),
+      plot.title = element_text(size = 25, face = "bold", hjust = 0.5),
+      axis.title = element_text(size = 18),
+      axis.text = element_text(size = 18),
+      legend.position = "bottom",
+      legend.title = element_text(size = 18),
+      legend.text = element_text(size = 18)
+    )
+}
+
+
 #WDPA database
 #Download from
 #https://www.protectedplanet.net/en/thematic-areas/wdpa?tab=WDPA
@@ -155,10 +171,20 @@ model_vessels()
 
 #---Model fishing effort----
 
-#Now model the presence/absence of fishing effort in MPAs and predict fishing presence and hours
 model_fishing()
 
-#---data analysis----
+#---Figures----
+
+#FIgure 1 
+global_map()
+
+#Figure 2 
+figure_2()
+
+#Figure 3
+plot_effects()
+
+#Fig 4 is create in model_fishing()
 
 #Make supplementary
 make_supp(MPA_final_vars) 

@@ -35,6 +35,4 @@ prep_data_for_analysis <- function(SAR_stats, mpa_wdpa){
   
   return(MPA_final_vars)
   
-  
-  
 }

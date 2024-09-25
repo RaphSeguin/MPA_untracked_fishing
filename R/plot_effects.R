@@ -9,7 +9,7 @@ plot_effects <- function(){
     as.data.frame() %>%
     mutate(significance = ifelse(t_value < -1.96 |t_value > 1.96,"Significant","Not Significant")) %>%
     rownames_to_column("term") %>%
-    mutate(model = "Density of vessl detections")
+    mutate(model = "Vessel detections")
   
   mod_spamm_unmatched_effects <- summary(mod_spamm_unmatched)$beta_table
   
@@ -18,7 +18,7 @@ plot_effects <- function(){
     as.data.frame() %>%
     mutate(significance = ifelse(t_value < -1.96 |t_value > 1.96,"Significant","Not Significant")) %>%
     rownames_to_column("term") %>%
-    mutate(model = "Density of unmatched vessel detections")
+    mutate(model = "Untracked vessel detections")
   
   mod_spamm_full = bind_rows(mod_spamm_effects,mod_spamm_unmatched_effects )
   
@@ -63,31 +63,29 @@ plot_effects <- function(){
              colour = guide_legend(order = 2)))
   
   #Iucn cat travel time
-  
-  #
   partial_iucn_cat <-  visreg(mod_spamm,"travel_time",type="conditional",by="iucn_cat")$fit
   
   partial_iucn_cat_plot <- ggplot(partial_iucn_cat) +
-    geom_line(aes(travel_time,visregFit,color = iucn_cat)) +
+    geom_line(aes(travel_time,visregFit,color = iucn_cat), linewidth = 1) +
     scale_color_manual(values = legend,breaks =c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported","EEZ"))  + 
     theme_minimal(base_size = 14) +
     theme(legend.position = "bottom") +
     labs(x = "Travel time to the nearest city - log scale",
-         y = "Fitted coefficients",
+         y = "Partial effect on number of tracked detections",
          color = "IUCN Category",
-         title = "Response: Density of vessel detections")
+         title = "Response: Vessel detections")
   
-  partial_iucn_cat_unmatched <-  visreg(mod_spamm_unmatched,"travel_time",type="conditional",by="iucn_cat")$fit 
-  
-  partial_iucn_cat_unmatched_plot <- ggplot(partial_iucn_cat_unmatched) +
-    geom_line(aes(travel_time,visregFit,color = iucn_cat)) +
-    scale_color_manual(values = legend,breaks =c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported","EEZ"))  + 
-    theme_minimal(base_size = 14) +
-    theme(legend.position = "bottom") +
-    labs(x = "Travel time to the nearest city - log scale",
-         y = "Fitted coefficients",
-         color = "IUCN Category",
-         title = "Response: Density of unmatched vessel detections")
+  # partial_iucn_cat_unmatched <-  visreg(mod_spamm_unmatched,"travel_time",type="conditional",by="iucn_cat")$fit 
+  # 
+  # partial_iucn_cat_unmatched_plot <- ggplot(partial_iucn_cat_unmatched) +
+  #   geom_line(aes(travel_time,visregFit,color = iucn_cat)) +
+  #   scale_color_manual(values = legend,breaks =c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported","EEZ"))  + 
+  #   theme_minimal(base_size = 14) +
+  #   theme(legend.position = "bottom") +
+  #   labs(x = "Travel time to the nearest city - log scale",
+  #        y = "Fitted coefficients",
+  #        color = "IUCN Category",
+  #        title = "Response: Untracked vessel detections")
   
   iucn_cats <- ggarrange(partial_iucn_cat_plot,partial_iucn_cat_unmatched_plot+ rremove("ylab"),nrow = 1, common.legend=T,legend="bottom")
   iucn_cats <-  annotate_figure(iucn_cats, top = text_grob("Effect of IUCN category on the density of vessel detections by travel time", face = "bold", size = 16))
@@ -95,16 +93,16 @@ plot_effects <- function(){
   # Save coefficient_plot to fill half of an A4 page
   ggsave(coefficient_plot, 
          file = "figures/coefficient_plot.jpg", 
-         width = 210 * 1.5,  # A4 width in mm
-         height = 148.5  *1.5,  # Half of A4 height in mm
+         width = 148.5 *2, 
+         height = 105*2,
          units = "mm", 
          dpi = 300)
   
   # Save iucn_cats to fill the other half of an A4 page
-  ggsave(iucn_cats, 
+  ggsave(partial_iucn_cat_plot, 
          file = "figures/iucn_cats.jpg", 
-         width = 210 * 1.5,  # A4 width in mm
-         height = 148.5 *1.5,  # Half of A4 height in mm
+         width = 148.5 *2, 
+         height = 105*2,
          units = "mm", 
          dpi = 300)
   

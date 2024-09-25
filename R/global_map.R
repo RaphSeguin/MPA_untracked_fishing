@@ -111,12 +111,15 @@ global_map <- function(){
   bbox_great_barrier_reef <- st_bbox(c(xmin = 141, ymin = -26, xmax = 160, ymax = -10), crs = st_crs(full_SAR_data))
   # Central America
   bbox_central_america <- st_bbox(c(xmin = -120, ymin = 4, xmax = -54, ymax = 29), crs = st_crs(full_SAR_data))
+  # North Sea
+  bbox_north_sea<- st_bbox(c(xmin = -15, ymin = 42, xmax = 8, ymax = 64), crs = st_crs(full_SAR_data))
   
   # Plot and save the maps
   nw_mediterranean_map <- plot_region_map(full_SAR_data, mpa_wdpa, world_4326, bbox_nw_mediterranean, "north_west_mediterranean")
   hokkaido_map <- plot_region_map(full_SAR_data, mpa_wdpa, world_4326, bbox_hokkaido, "hokkaido")
   great_barrier_reef_map <- plot_region_map(full_SAR_data, mpa_wdpa, world_4326, bbox_great_barrier_reef, "great_barrier_reef")
   central_america_map <- plot_region_map(full_SAR_data, mpa_wdpa, world_4326, bbox_central_america, "central_america")
+  north_sea_map <- plot_region_map(full_SAR_data, mpa_wdpa, world_4326, bbox_north_sea, "north_sea")
   
   
 }

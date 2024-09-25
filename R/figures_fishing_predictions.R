@@ -19,6 +19,8 @@ figures_fishing_predictions <- function(mpa_model,
            predicted_fishing_all = predicted_fishing_effort_2022 + predicted_fishing_effort_2023) %>%
     mutate(iucn_cat = ifelse(iucn_cat %in% c("Ia","Ib"), "I", iucn_cat)) %>%
     filter(iucn_cat != "III")
+  
+  #Values
 
   # Create the plot
   correlation <- MPA_fishing %>%
@@ -123,7 +125,6 @@ figures_fishing_predictions <- function(mpa_model,
     theme(legend.position = "bottom",
           axis.text.y = element_text(size = 11)) 
   
-  
   #FULL FIRST PART
   percentage_increase_full <- ggarrange(raw_increase_fishing, percentage_increase_fishing, nrow = 2, ncol = 1,
                                         align = "v")
@@ -141,7 +142,7 @@ figures_fishing_predictions <- function(mpa_model,
     st_as_sf() %>%
     st_centroid() %>%
     #Join with LME
-    st_join(LME, join = st_nearest_feature) %>%
+    st_join(LME %>% dplyr::select(LME_NAME), join = st_nearest_feature) %>%
     group_by(LME_NAME) %>%
     reframe(observed_fishing = sum(AIS_fishing_all),
             predicted_fishing = sum(predicted_fishing_all),
@@ -149,7 +150,7 @@ figures_fishing_predictions <- function(mpa_model,
             percentage_increase = difference_fishing / observed_fishing * 100,
             predicted_fishing_log = sqrt(predicted_fishing)) %>%
     ungroup() %>%
-    filter(predicted_fishing > 1000) %>%
+    filter(predicted_fishing > 500) %>%
     left_join(LME %>% dplyr::select(LME_NAME), by = "LME_NAME") %>%
     st_as_sf() %>%
     sf::st_transform(world_ne, crs="ESRI:54030") %>%
@@ -315,7 +316,7 @@ figures_fishing_predictions <- function(mpa_model,
          file = "figures/predicted_fishing_map.jpg", 
          width = 297*1.5, height = 105*1.5, units = "mm",dpi=600)
   
-  ggsave("figures/correlation.jpg", plot = correlation, width = 148.5 * 1.5, height = 105 * 1.5, units = "mm", dpi = 600)
+  ggsave("figures/correlation.jpg", plot = correlation, width = 148.5, height = 105, units = "mm", dpi = 600)
   
   ggsave("figures/percentage_increase_full.jpg", plot = percentage_increase_full, 
          width = 148.5 *1.5, height = 105*1.5, units = "mm")

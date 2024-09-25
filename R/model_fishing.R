@@ -48,10 +48,10 @@ model_fishing <- function(){
   optimal_cutoff_2023 <- find_cutoff_binomial(mpa_model, folds, formula_binomial_2023,"fishing_presence_2023")
 
   #Train and test the binomial model
-  binomial_performance_2022 <- cv_binomial_spamm(mpa_model, folds, optimal_cutoff, formula_binomial_2022, "fishing_presence_2022")
+  binomial_performance_2022 <- cv_binomial_spamm(mpa_model, folds, optimal_cutoff_2022, formula_binomial_2022, "fishing_presence_2022")
   write.csv(binomial_performance_2022, file = "figures/supp/binomial_performance_2022.csv")
   
-  binomial_performance_2023 <- cv_binomial_spamm(mpa_model, folds, optimal_cutoff, formula_binomial_2023, "fishing_presence_2023")
+  binomial_performance_2023 <- cv_binomial_spamm(mpa_model, folds, optimal_cutoff_2023, formula_binomial_2023, "fishing_presence_2023")
   write.csv(binomial_performance_2023, file = "figures/supp/binomial_performance_2023.csv")
   #-----Regression model-------
   
@@ -128,6 +128,10 @@ model_fishing <- function(){
   
   #Plot figures
   figures_fishing_predictions(mpa_model,fishing_presence_2022, fishing_presence_2023, fishing_hours_2022, fishing_hours_2023)
+  
+  plot_fishing_density(mpa_model,
+                       fishing_presence_2022, fishing_presence_2023,
+                       fishing_hours_2022, fishing_hours_2023)
   
   #Predictions by IUCN category
   figures_fishing_predictions_iucn(mpa_model,
