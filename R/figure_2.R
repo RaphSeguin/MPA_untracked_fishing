@@ -69,6 +69,7 @@ figure_2 <- function(SAR_stats){
       ggplot(aes(factor(iucn_cat,level = level_order), unmatched_ratio * 100, fill = iucn_cat)) + 
       geom_jitter(size = 0.1,alpha = 0.2) + 
       geom_boxplot(alpha = 0.7) +
+
       scale_fill_manual(values = legend,breaks =c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported","EEZ")) + 
       theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
       labs(title = "C",

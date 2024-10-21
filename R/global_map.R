@@ -56,7 +56,6 @@ global_map <- function(){
          units = "mm")
   
   #Now create inset maps
-  
   world_4326 <- rnaturalearth::ne_countries(scale = "large", returnclass = "sf") %>%
     filter(name != "Antarctica")
   

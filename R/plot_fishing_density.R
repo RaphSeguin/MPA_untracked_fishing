@@ -107,5 +107,6 @@ plot_fishing_density <- function(mpa_model,
     ) %>%
     mutate_if(is.numeric, round, digits = 2)
   
+  write.csv(EEZ_MPA_stat_test, file = "figures/supp/EEZ_MPA_stat_test.csv")
   
 }

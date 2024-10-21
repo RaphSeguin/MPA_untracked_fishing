@@ -37,15 +37,15 @@ figures_fishing_predictions <- function(mpa_model,
     geom_smooth(aes(x = log(SAR_all), y = log(predicted_fishing_all), color = "Tracked and untracked vs Predicted"), 
                 method = "lm", se = F, size = 1.5) +
     scale_color_manual(values = c("Tracked vs AIS" = "#E28A2A", "Tracked and untracked vs Predicted" = "#384B6A")) +
-    labs(x = "Vessel detections", y = "Fishing effort (hours)", 
+    labs(x = "Vessel detections (log-scale)", y = "Fishing effort - log(hours)", 
          color = "Type") +
-    theme_minimal(base_size = 15) +
+    theme_minimal(base_size = 18) +
     theme(
       plot.title = element_text(face = "bold", size = 18, hjust = 0.5),
       plot.subtitle = element_text(size = 14, hjust = 0.5),
       legend.position = "bottom",
       legend.title = element_text(face = "bold"),
-      legend.text = element_text(size = 12)
+      legend.text = element_text(size = 16)
     ) +
     theme(panel.grid.major = element_line(color = "gray80", size = 0.5),
           panel.grid.minor = element_blank(),
@@ -73,7 +73,7 @@ figures_fishing_predictions <- function(mpa_model,
     coord_flip() +
     labs(x = " ",
          y = "Additional number of MPAs with fishing") +
-    my_custom_theme()
+    my_custom_theme() 
   
   #Percentage
   percentage_increase_presence <- MPA_presence_increase %>%
@@ -122,8 +122,7 @@ figures_fishing_predictions <- function(mpa_model,
     labs(x = "", y = "Percentage increase in fishing effort", 
          fill = "Type") +
     my_custom_theme() +
-    theme(legend.position = "bottom",
-          axis.text.y = element_text(size = 11)) 
+    theme(legend.position = "bottom")
   
   #FULL FIRST PART
   percentage_increase_full <- ggarrange(raw_increase_fishing, percentage_increase_fishing, nrow = 2, ncol = 1,
@@ -316,10 +315,10 @@ figures_fishing_predictions <- function(mpa_model,
          file = "figures/predicted_fishing_map.jpg", 
          width = 297*1.5, height = 105*1.5, units = "mm",dpi=600)
   
-  ggsave("figures/correlation.jpg", plot = correlation, width = 148.5, height = 105, units = "mm", dpi = 600)
+  ggsave("figures/correlation.jpg", plot = correlation, width = 148.5 * 1.5 , height = 105 * 1.5, units = "mm", dpi = 600)
   
   ggsave("figures/percentage_increase_full.jpg", plot = percentage_increase_full, 
-         width = 148.5 *1.5, height = 105*1.5, units = "mm")
+         width = 180 *2, height = 105*2, units = "mm")
   
   #----- 
   

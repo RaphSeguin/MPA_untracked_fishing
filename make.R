@@ -41,7 +41,7 @@ SAR_footprints <- load_SAR_footprints()
 #Theme for plot
 #Base theme
 my_custom_theme <- function() {
-  theme_minimal(base_size = 15) +
+  theme_minimal(base_size = 18) +
     theme(
       text = element_text(family = "Times New Roman"),
       plot.title = element_text(size = 25, face = "bold", hjust = 0.5),
@@ -63,13 +63,20 @@ prep_mpa_data()
 
 # #Unionzed MPA for country comparison
 load("data/mpa_wdpa.Rdata")
+load("data/mpa_protected_seas.Rdata")
 
 MPA_union <- mpa_wdpa %>%
   group_by(parent_iso) %>%
   reframe(geometry = st_union(geometry)) %>%
   ungroup()
 
+MPA_PS_union <- mpa_protected_seas %>%
+  group_by(country) %>%
+  reframe(geometry = st_union(geometry)) %>%
+  ungroup()
+
 save(MPA_union, file = "output/MPA_union.Rdata")
+save(MPA_PS_union, file = "output/MPA_PS_union.Rdata")
 
 #Load Rdata
 path = (here::here("data"))
