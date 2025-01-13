@@ -3,15 +3,20 @@
 
 #-----------------Loading packages-------------------
 
-pkgs <- c("tidyverse","here","lme4","broom","tidymodels","parallel","cowplot","ggspatial","sf","RColorBrewer","ggridges","plotly","heatmaply","parsedate","birk","ggthemes","MASS","automap","pbmcapply","janitor","gfwr","arrow","beepr","sfarrow","corrplot","DHARMa",
-          "harrypotter","wesanderson","ranger","missForest","rgdal","countrycode","ggpubr","data.table","randomForestExplainer","spatialRF","spaMM","DHARMa","glmmTMB","performance","spdep","rstatix","formatdown","ggrepel","tidync","nngeo","ncdf4","e1071","pROC",
-          "units","xml2","XML","rnaturalearth","ggExtra","raster","exactextractr","gstat","magrittr","scales","grid","gridExtra","XML","imputeTS","rgeos","visreg","piecewiseSEM","furrr","future","yardstick","kernelshap","gbm","spatialsample","s2","merTools")
+pkgs <- c("tidyverse","here","lme4","broom","tidymodels","parallel","cowplot","ggspatial","sf","RColorBrewer","ggridges",
+          "plotly","heatmaply","parsedate","birk","ggthemes","MASS","automap","pbmcapply","janitor","gfwr","arrow","beepr",
+          "sfarrow","corrplot","DHARMa", "harrypotter","wesanderson","ranger","missForest","rgdal","countrycode","ggpubr",
+          "data.table","randomForestExplainer","spatialRF","spaMM","DHARMa","glmmTMB","performance","spdep","rstatix",
+          "formatdown","ggrepel","tidync","nngeo","ncdf4","e1071","pROC","units","xml2","XML","rnaturalearth","ggExtra",
+          "raster","exactextractr","gstat","magrittr","scales","grid","gridExtra","XML","imputeTS","rgeos","visreg",
+          "piecewiseSEM","furrr","future","yardstick","kernelshap","gbm","spatialsample","s2","merTools","wdpar","stringi")
 nip <- pkgs[!(pkgs %in% installed.packages())]
 nip <- lapply(nip, install.packages, dependencies = TRUE)
 ip   <- unlist(lapply(pkgs, require, character.only = TRUE, quietly = TRUE))
 
 key <- gfw_auth()
-sf_use_s2(FALSE)
+sf_use_s2(F)
+
 #-----------------Loading all functions---------------------
 
 path = (here::here("R"))
@@ -53,7 +58,6 @@ my_custom_theme <- function() {
     )
 }
 
-
 #WDPA database
 #Download from
 #https://www.protectedplanet.net/en/thematic-areas/wdpa?tab=WDPA
@@ -63,20 +67,13 @@ prep_mpa_data()
 
 # #Unionzed MPA for country comparison
 load("data/mpa_wdpa.Rdata")
-load("data/mpa_protected_seas.Rdata")
 
 MPA_union <- mpa_wdpa %>%
   group_by(parent_iso) %>%
   reframe(geometry = st_union(geometry)) %>%
   ungroup()
 
-MPA_PS_union <- mpa_protected_seas %>%
-  group_by(country) %>%
-  reframe(geometry = st_union(geometry)) %>%
-  ungroup()
-
 save(MPA_union, file = "output/MPA_union.Rdata")
-save(MPA_PS_union, file = "output/MPA_PS_union.Rdata")
 
 #Load Rdata
 path = (here::here("data"))
@@ -98,8 +95,8 @@ lonlat = cbind(lon = SAR_data$lon,lat = SAR_data$lat)
 #Create grid
 SAR_mpa <- st_join(SAR_data_sf %>% cbind(lonlat), mpa_wdpa,left = F) %>%
   #replacing MPA area with REAL mpa area
-  dplyr::select(-gis_m_area) %>%
-  dplyr::rename(gis_m_area = "area_correct") %>%
+  # dplyr::select(-gis_m_area) %>%
+  # dplyr::rename(gis_m_area = "area_correct") %>%
   st_drop_geometry() %>%
   #Add year
   mutate(year = substr(timestamp, 1, 4))

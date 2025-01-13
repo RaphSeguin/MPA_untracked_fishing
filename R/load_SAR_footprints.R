@@ -13,5 +13,6 @@ load_SAR_footprints <- function(){
     bind_rows() 
   
   save(SAR_footprints, file = "data/SAR_footprints.Rdata")
+  return(SAR_footprints)
   
 }

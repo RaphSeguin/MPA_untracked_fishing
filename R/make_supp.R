@@ -1,5 +1,21 @@
 make_supp <- function(MPA_final_vars){
   
+  #A CASER
+  
+  #Figures on proportion of MPAs included
+  nrow(mpa_wdpa)/nrow(final_mpas) * 100
+  
+  sum(mpa_wdpa$area_clean)/sum(final_mpas$area_clean) * 100
+  
+  #Included MPAs vs removed MPAs
+  MPAs_included <- ggplot() + 
+    geom_sf(data = world, fill = "lightgrey") + 
+    geom_sf(data = final_mpas, fill = "darkred") +
+    geom_sf(data = mpa_wdpa, fill = "forestgreen") +
+    theme_map()
+  
+  ggsave(MPAs_included, file = "figures/supp/MPAs_included.jpg", width = 297, height = 105, units = "mm", dpi = 300)
+  
   #World for maps
   world <- rnaturalearth::ne_countries(scale = "large")
 
