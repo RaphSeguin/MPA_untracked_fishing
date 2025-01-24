@@ -1,4 +1,27 @@
-eez_mpa_difference <- function(eez, mpa_wdpa){
+#' Calculate the Difference Between EEZ and MPAs
+#'
+#' This function calculates the unprotected areas within Exclusive Economic Zones (EEZ) by 
+#' removing Marine Protected Areas (MPAs) and a 1 km coastal buffer. The resulting dataset 
+#' includes EEZ regions that are outside both MPAs and the coastal buffer.
+#'
+#' @param eez An `sf` object representing the EEZ boundaries.
+#' @param mpa_wdpa An `sf` object representing the Marine Protected Areas dataset.
+#' @param SAR_footprints_sf An `sf` object representing the study area's SAR footprints, used 
+#' to intersect EEZ with the study area.
+#'
+#' @return An `sf` object containing the unprotected EEZ areas, with additional attributes:
+#' - `ISO_SOV1`: Sovereign country code.
+#' - `eez_area`: Area of the unprotected EEZ in square kilometers.
+#'
+#' @details
+#' The function performs the following steps:
+#' 1. Intersects the EEZ boundaries with the study area defined by SAR footprints.
+#' 2. Applies a 1 km buffer from the shoreline to exclude coastal regions.
+#' 3. Removes all protected areas created before 2022 from the EEZ regions.
+#' 4. Calculates the total area of unprotected EEZ for each country.
+#'
+
+eez_mpa_difference <- function(eez, mpa_wdpa, SAR_footprints_sf){
   
   #First, intersect EEZ with study area
   study_area <- SAR_footprints_sf %>% st_simplify(dTolerance = 0.1) %>% st_union()
@@ -17,34 +40,13 @@ eez_mpa_difference <- function(eez, mpa_wdpa){
   coastalWaters = ROI %>%
     st_buffer(buffer_as_arc_degrees)  %>% st_wrap_dateline() %>% st_make_valid()
   
-  #Removing parts of MPA 1km within shoreline
+  #Removing parts of EEZ 1km within shoreline
   eez_no_coastline <- st_difference(eez_study_area,coastalWaters)
   
-  #Then, remove ALL protected areas created before 2017 from the EEZ 
+  #Then, remove ALL protected areas created before 2022 from the EEZ 
   #This way only the unprotected part remains
-  #Mpa clean
-  mpa_wdpa_all <- bind_rows(st_read(dsn = "maps/WDPA/WDPA_Feb2024_Public_shp_0",
-                                layer = "WDPA_Feb2024_Public_shp-polygons",
-                                quiet = TRUE),
-                        st_read(dsn =
-                                  "maps/WDPA/WDPA_Feb2024_Public_shp_1",
-                                layer = "WDPA_Feb2024_Public_shp-polygons",
-                                quiet = TRUE),
-                        st_read(dsn =
-                                  "maps/WDPA/WDPA_Feb2024_Public_shp_2",
-                                layer = "WDPA_Feb2024_Public_shp-polygons",
-                                quiet = TRUE)) %>%
-    clean_names() %>%
-    #Keep only marine and partially marines MPAs
-    dplyr::filter(marine %in% c(1,2),
-                  !status_yr == 0) %>%
-    #Only selecting MPAs created BEFORE 2017 
-    filter(status_yr < 2022) %>%
-    filter(!status %in% c("Proposed","Established","Not Reported")) %>%
-    st_make_valid()
-
-  #Union of all MPAs
-  all_mpas = mpa_wdpa_all %>% st_union()
+  load("data/world_mpas_clean.Rdata")
+  all_mpas = world_mpas_clean %>% st_union()
   save(all_mpas, file = "output/all_mpas.Rdata")
   
   #EEZ without MPAs

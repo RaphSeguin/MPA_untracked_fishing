@@ -1,3 +1,25 @@
+#' Calculate Sea Surface Temperature (SST) for MPAs
+#'
+#' This function extracts and processes Sea Surface Temperature (SST) data from NetCDF files 
+#' to compute mean and standard deviation values for each Marine Protected Area (MPA).
+#'
+#' @param mpa_wdpa An `sf` object representing the MPA dataset.
+#'
+#' @return A dataframe with two columns:
+#' - `mean_sst`: Mean Sea Surface Temperature for each MPA.
+#' - `sd_sst`: Standard deviation of Sea Surface Temperature for each MPA.
+#'
+#' @details
+#' 1. Loads SST data from NetCDF files in `data/covariates/SST_covariates/`.
+#' 2. Extracts longitude (`lon`), latitude (`lat`), and SST values.
+#' 3. Computes the mean and standard deviation of SST at each location.
+#' 4. Converts SST data into an `sf` object for spatial processing.
+#' 5. Joins SST data with MPAs using the nearest centroid.
+#'
+#' @examples
+#' sst_mpa <- calculate_SST(mpa_wdpa)
+#'
+
 calculate_SST <- function(mpa_wdpa){
   
   # Example for loading NetCDF data
@@ -31,33 +53,5 @@ calculate_SST <- function(mpa_wdpa){
     dplyr::select(mean_sst, sd_sst)
   
   return(sst_mpa)
-  
-  # # Create raster from mean SST
-  # sst_mean_raster <- rotate(rasterFromXYZ(sst_summary %>% dplyr::select(lon, lat, mean_sst)))
-  # # Create raster from SD SST
-  # sst_sd_raster <- rotate(rasterFromXYZ(sst_summary %>% dplyr::select(lon, lat, sd_sst)))
-  # 
-  # # Assign CRS (assuming WGS84)
-  # crs(sst_mean_raster) <- CRS("+proj=longlat +datum=WGS84 +no_defs")
-  # crs(sst_sd_raster) <- CRS("+proj=longlat +datum=WGS84 +no_defs")
-  # 
-  # # Define a function that replaces NA with the nearest non-NA value
-  # fill_na_nearest <- function(x) {
-  #   if (is.na(x[5])) {  # Assuming a 3x3 window, the center value is at index 5
-  #     return(na.omit(x)[1])  # Replace with the first non-NA value
-  #   } else {
-  #     return(x[5])  # Keep the original value if it's not NA
-  #   }
-  # }
-  # 
-  # # Apply the focal function to fill NA values with the nearest non-NA value
-  # sst_mean_raster_filled <- focal(sst_mean_raster, w = matrix(1, 3, 3), fun = fill_na_nearest, pad = TRUE, na.rm = FALSE)
-  # 
-  # # Extract mean SST within each MPA
-  # mean_sst_in_mpa <-  exact_extract(sst_mean_raster_filled, mpas, 'mean', progress = TRUE)
-  # 
-  # # Extract SD SST within each MPA
-  # sd_sst_in_mpa <- exact_extract(sst_sd_raster, mpas, 'mean', progress = TRUE)
-  # 
   
 }

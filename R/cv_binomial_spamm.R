@@ -1,3 +1,32 @@
+#' Cross-Validation for Binomial GLM Model
+#'
+#' This function performs **k-fold cross-validation** to evaluate the performance of a binomial logistic regression model.
+#'
+#' @param mpa_model A dataframe containing the data for modeling.
+#' @param folds A resampling object (`rsample` object) containing cross-validation folds.
+#' @param optimal_cutoff A numeric value representing the best probability threshold for classification.
+#' @param formula_binomial A formula specifying the binomial logistic regression model.
+#' @param pred_var A string specifying the name of the response variable in `mpa_model`.
+#'
+#' @return A dataframe (`results_cv_binomial`) containing cross-validation performance metrics:
+#' - `Fold`: Fold number.
+#' - `Accuracy`: Classification accuracy.
+#' - `Kappa`: Cohen’s kappa coefficient.
+#' - `Precision`: Positive predictive value.
+#' - `Recall`: Sensitivity (true positive rate).
+#' - `F1_Score`: Harmonic mean of precision and recall.
+#' - `ROC_AUC`: Area Under the Receiver Operating Characteristic Curve.
+#'
+#' @details
+#' 1. **Splits data into training and testing sets** for each cross-validation fold.
+#' 2. **Trains a binomial logistic regression model** (`glm()`) on the training data.
+#' 3. **Predicts probabilities** on the test set.
+#' 4. **Applies the optimal probability cutoff** to classify instances.
+#' 5. **Computes performance metrics**:
+#'    - Accuracy, Kappa, Precision, Recall, F1 Score.
+#'    - ROC AUC using `pROC::auc()`.
+#' 6. **Aggregates results across all folds** and calculates
+
 cv_binomial_spamm <- function(mpa_model, folds, optimal_cutoff, formula_binomial, pred_var){
   
   #Test final model performance

@@ -1,3 +1,27 @@
+#' Find Optimal Cutoff for Binomial Model
+#'
+#' This function determines the optimal probability cutoff for classifying fishing presence 
+#' in a binomial logistic regression model using **cross-validation**.
+#'
+#' @param mpa_model A dataframe containing the data for modeling.
+#' @param folds A resampling object (`rsample` object) containing cross-validation folds.
+#' @param formula_binomial A formula specifying the binomial logistic regression model.
+#' @param pred_var A string specifying the name of the response variable in `mpa_model`.
+#'
+#' @return A numeric value representing the **average optimal cutoff** across all cross-validation folds.
+#'
+#' @details
+#' 1. **Defines a sequence of probability cutoffs** from `0.1` to `0.9` (step `0.01`).
+#' 2. **Trains a binomial logistic regression model** (`glm()`) for each fold.
+#' 3. **Predicts probabilities** on the test set.
+#' 4. **Computes F1 scores** for each cutoff using `caret::confusionMatrix()`.
+#' 5. **Selects the cutoff that maximizes the F1 score** for each fold.
+#' 6. **Averages the optimal cutoffs across all folds** to determine the final value.
+#'
+#' @examples
+#' optimal_cutoff <- find_cutoff_binomial(mpa_model, folds, fishing_presence_2023 ~ ., "fishing_presence_2023")
+#'
+
 find_cutoff_binomial <- function(mpa_model, folds, formula_binomial, pred_var) {
   
   cutoffs <- seq(0.1, 0.9, by = 0.01)

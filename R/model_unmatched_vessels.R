@@ -1,3 +1,37 @@
+#' Model Unmatched Fishing Vessels in MPAs
+#'
+#' This function fits a **Gamma spatial mixed-effects model** to predict 
+#' the number of **unmatched fishing vessels detected (SAR detections)** within Marine Protected Areas (MPAs).
+#'
+#' @param mpa_vessel_model A dataframe containing vessel activity, environmental, and socioeconomic covariates for MPAs.
+#'
+#' @return A fitted model (`mod_spamm_unmatched`) predicting unmatched vessel presence, with outputs saved as:
+#' - `output/mod_spamm_unmatched.Rdata`: The fitted model object.
+#' - `figures/supp/mod_spamm_unmatched_output.csv`: Model coefficients summary.
+#'
+#' @details
+#' 1. **Filters MPAs with vessel presence** (`SAR_presence == "SAR" & unmatched_fishing > 0`).
+#' 2. **Removes duplicate geometries** to avoid redundancy.
+#' 3. **Applies a log transformation** to `unmatched_fishing` (`log10(unmatched_fishing + 1)`).
+#' 4. **Filters MPAs within IUCN categories "I" to "VI"**.
+#' 5. **Relevels IUCN categories**, setting "VI" as the reference.
+#' 6. **Fits a Gamma GLMM** using `spaMM::fitme()`:
+#'    - Predictors: MPA size, productivity, SST, GDP, HDI, travel time, human footprint, depth, distance to shore.
+#'    - Random effect: `parent_iso` (country-level variation).
+#'    - Spatial structure: `Matern(1 | X + Y)`.
+#' 7. **Processes model output**:
+#'    - Extracts and renames coefficients for interpretability.
+#'    - Rounds numerical values and formats p-values.
+#'    - Saves results to a CSV file.
+#' 8. **Performs additional model diagnostics**:
+#'    - Computes **pseudo R²**.
+#'    - Checks **collinearity**.
+#'    - Extracts **variance components**.
+#'
+#' @examples
+#' unmatched_vessel_model <- model_unmatched_vessels(mpa_vessel_model)
+#'
+
 model_unmatched_vessels <- function(mpa_vessel_model){
   
   mpa_vessel_model_regression_unmatched <- mpa_vessel_model %>%
@@ -16,14 +50,12 @@ model_unmatched_vessels <- function(mpa_vessel_model){
   avail_thr <- parallel::detectCores(logical=FALSE) - 1L
   
   #Problem is 754
-  system.time(
     mod_spamm_unmatched <- fitme(unmatched_fishing ~  iucn_cat + marine + area_correct + 
                                    mean_chl + sd_chl + mean_sst + sd_sst + gdp + HDI + hf + MarineEcosystemDependency + 
                                    depth + dist_to_shore + travel_time + (1|parent_iso) + Matern(1 | X + Y),
                        data = mpa_vessel_model_regression_unmatched, 
                        family = Gamma(log), 
                        control.HLfit = list(NbThreads = 6))
-  )
   
   save(mod_spamm_unmatched, file = "output/mod_spamm_unmatched.Rdata")
   

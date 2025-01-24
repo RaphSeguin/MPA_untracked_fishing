@@ -1,3 +1,5 @@
+#Describe main results
+
 describe_results <- function(){
  
    load("output/SAR_eez_stats.Rdata")
@@ -184,8 +186,8 @@ describe_results <- function(){
    #Number of MPAs with fishing and SAR
    fishing_AIS <- MPA_final_vars %>% 
      filter(sum_all > 0) %>%
-     left_join(MPA_covariates %>% dplyr::select(id_iucn, AIS_fishing_2022, AIS_fishing_2023), by = "id_iucn") %>%
-     mutate(fishing_AIS = AIS_fishing_2022 + AIS_fishing_2023,
+     left_join(MPA_covariates %>% dplyr::select(id_iucn, AIS_fishing_2022, AIS_fishing_2023, AIS_fishing_2024), by = "id_iucn") %>%
+     mutate(fishing_AIS = AIS_fishing_2022 + AIS_fishing_2023 + AIS_fishing_2024,
             fishing_AIS_presence = as.factor(ifelse(fishing_AIS == 0, "No fishing","Fishing")))
    
    nrow(fishing_AIS %>% filter(fishing_AIS_presence == "Fishing"))
@@ -202,14 +204,16 @@ describe_results <- function(){
    
    #Number of MPAs with fishing in 2022 and 2023
    fishing_AIS_all <- mpa_model %>% 
-     mutate(fishing_AIS = AIS_fishing_2022 + AIS_fishing_2023,
+     mutate(fishing_AIS = AIS_fishing_2022 + AIS_fishing_2023 + AIS_fishing_2024,
             fishing_AIS_presence = as.factor(ifelse(fishing_AIS == 0, "No fishing","Fishing")))
    
    nrow(fishing_AIS_all %>% filter(AIS_fishing_2022 > 0))/nrow(fishing_AIS_all)
    nrow(fishing_AIS_all %>% filter(AIS_fishing_2023 > 0))/nrow(fishing_AIS_all)
+   nrow(fishing_AIS_all %>% filter(AIS_fishing_2024 > 0))/nrow(fishing_AIS_all)
    
    sum(fishing_AIS_all$AIS_fishing_2022,na.rm=T)
    sum(fishing_AIS_all$AIS_fishing_2023,na.rm=T)
+   sum(fishing_AIS_all$AIS_fishing_2024,na.rm=T)
    sum(fishing_AIS_all$AIS_fishing_2022,na.rm=T) + sum(fishing_AIS_all$AIS_fishing_2023,na.rm=T)
    
    #Results on size

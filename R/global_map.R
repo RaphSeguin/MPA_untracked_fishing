@@ -1,3 +1,36 @@
+#' Generate and Save Global and Regional Maps of SAR Fishing Detections
+#'
+#' This function creates a **global fishing detection map** and detailed **regional maps** 
+#' for key areas with significant fishing activity based on SAR data.
+#'
+#' @return Saves the following outputs:
+#' - `figures/global_map.png`: Global map showing MPAs, EEZs, and SAR detections.
+#' - `figures/north_west_mediterranean_map.jpg`: Fishing detections in the **North-West Mediterranean**.
+#' - `figures/hokkaido_map.jpg`: Fishing detections in **Hokkaidō, Japan**.
+#' - `figures/great_barrier_reef_map.jpg`: Fishing detections near the **Great Barrier Reef**.
+#' - `figures/central_america_map.jpg`: Fishing detections around **Central America**.
+#' - `figures/north_sea_map.jpg`: Fishing detections in the **North Sea**.
+#'
+#' @details
+#' 1. **Processes SAR detection data** (`full_SAR_data`):
+#'    - Joins matched detections to create a comprehensive dataset.
+#'    - Classifies detections by continent and refines North and South America.
+#'    - Computes **percentage of tracked fishing activity** at a **continental level**.
+#' 2. **Generates a global map**:
+#'    - Displays **coastlines, EEZs, MPAs**, and **SAR detections**.
+#'    - Uses a custom color palette to differentiate tracked and untracked fishing activity.
+#'    - Saves as a **high-resolution PNG**.
+#' 3. **Defines bounding boxes for key regions**:
+#'    - **North-West Mediterranean** (Europe).
+#'    - **Hokkaidō, Japan**.
+#'    - **Great Barrier Reef, Australia**.
+#'    - **Central America**.
+#'    - **North Sea**.
+#' 4. **Creates regional maps**:
+#'    - Crops SAR, MPA, and world coastline data to bounding boxes.
+#'    - Highlights **fishing activity** using color-coded detections.
+#'    - Saves each **regional map as a high-resolution JPEG**.
+
 global_map <- function(){
   
   #full SAR data
@@ -34,30 +67,29 @@ global_map <- function(){
   #Prep data for map
   colors <- c("#ffc6c4", "#f4a3a8", "#e38191", "#cc607d", "#ad466c", "#8b3058", "#672044")
   
-  world <- rnaturalearth::ne_countries(scale = "large", returnclass = "sf") %>%
-    filter(name != "Antarctica") %>%
-    # Convert WGS84 to projected crs (here Robinson)
-    sf::st_transform(crs = "ESRI:54030")
+  coastline <- rnaturalearth::ne_coastline(scale = "large", returnclass = "sf") %>%
+    sf::st_transform(crs = "ESRI:54030")  # Convert to projected CRS
   
   study_area <- st_read("data/study_area_clean.shp")
   
   #Map
   global_map <- ggplot() +
-    geom_sf(data = world, fill = "#F5F5F5", lwd = 0.05) +
-    geom_sf(data = mpa_wdpa %>% sf::st_transform(crs = "ESRI:54030"), fill = "#43a9d1", color = "black") + 
+    geom_sf(data = coastline, fill = "#F5F5F5", lwd = 0.01) +
+    geom_sf(data = eez, fill = NA, color = "black", lwd = 0.05) + 
+    geom_sf(data = mpa_wdpa %>% sf::st_transform(crs = "ESRI:54030"),
+            fill = "#43a9d1", color = "black", lwd = 0.05) + 
     theme_void() +
     theme(plot.margin = grid::unit(c(0, 0, 0, 0), "cm")) 
   
   ggsave(global_map, 
-         file = "figures/global_map.jpg",
+         file = "figures/global_map.png",
          width = 297*1.5,
          height = 105*1.5,
          dpi = 600,
          units = "mm")
-  
+
   #Now create inset maps
-  world_4326 <- rnaturalearth::ne_countries(scale = "large", returnclass = "sf") %>%
-    filter(name != "Antarctica")
+  world_4326 <- rnaturalearth::ne_coastline(scale = "large", returnclass = "sf") 
   
   # Function to crop data and create a ggplot map for a specific region
   plot_region_map <- function(full_SAR_data, mpa_wdpa, world_4326, bbox, region_name) {
@@ -119,6 +151,5 @@ global_map <- function(){
   great_barrier_reef_map <- plot_region_map(full_SAR_data, mpa_wdpa, world_4326, bbox_great_barrier_reef, "great_barrier_reef")
   central_america_map <- plot_region_map(full_SAR_data, mpa_wdpa, world_4326, bbox_central_america, "central_america")
   north_sea_map <- plot_region_map(full_SAR_data, mpa_wdpa, world_4326, bbox_north_sea, "north_sea")
-  
   
 }

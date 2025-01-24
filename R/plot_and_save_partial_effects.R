@@ -1,3 +1,27 @@
+#' Plot and Save Partial Effects from Model
+#'
+#' This function extracts significant variables from a fitted model, 
+#' generates **partial effect plots**, and saves the resulting visualization.
+#'
+#' @param model A fitted regression model (e.g., from `spaMM::fitme`).
+#' @param data The dataset used for modeling, containing predictor variables.
+#' @param model_name A string representing the model name, used for saving the output file.
+#'
+#' @return Saves a PNG file containing partial effect plots and displays them.
+#'
+#' @details
+#' 1. Extracts **significant variables** (`p_value < 0.01` and `|t-value| > 1.96`).
+#' 2. **Groups IUCN categories** into a single variable (`iucn_cat`).
+#' 3. **Renames variables** for better interpretability.
+#' 4. Uses **`visreg::visreg()`** to compute partial effects.
+#' 5. Creates **scatter plots for categorical variables** and **line plots with confidence bands for continuous variables**.
+#' 6. Uses **`ggplot2`** for visualization with `my_custom_theme()`.
+#' 7. Arranges all plots in a grid (`3 per row`) and **saves them as**:
+#'    - `figures/supp/<model_name>_partial_effects.png`
+#'
+#' @examples
+#' plot_and_save_partial_effects(mod_spamm_binomial, mpa_vessel_model, "mod_spamm_binomial")
+#'
 
 # Function to select variables and plot partial effects, then save the plot
 plot_and_save_partial_effects <- function(model, data, model_name) {
@@ -8,7 +32,8 @@ plot_and_save_partial_effects <- function(model, data, model_name) {
     rownames_to_column("Variable") %>%
     clean_names() %>%
     filter(variable != "(Intercept)") %>%  # Exclude the intercept
-    filter(t_value < -1.96 | t_value > 1.96)  # Select variables with t-value < -1.96 or > 1.96
+    filter(t_value < -1.96 | t_value > 1.96) %>%
+    filter(p_value < 0.01)# Select variables with t-value < -1.96 or > 1.96
   
   # Adjust IUCN categories to a single variable "iucn_cat"
   model_summary <- model_summary %>%
@@ -75,7 +100,7 @@ plot_and_save_partial_effects <- function(model, data, model_name) {
   
   # Save the plot to a file
   file_name <- paste0("figures/supp/", model_name, "_partial_effects.png")
-  ggsave(file_name, plot_grid, width = 297*2.2, height = 210*1.5, units ="mm")
+  ggsave(file_name, plot_grid, width = 297*2.3, height = 210*1.5, units ="mm")
   
   # Display the saved plot
   grid.newpage()

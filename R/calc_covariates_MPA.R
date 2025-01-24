@@ -1,3 +1,31 @@
+#' Calculate MPA Covariates
+#'
+#' This function computes various environmental, geographic, and human activity 
+#' covariates for Marine Protected Areas (MPAs).
+#'
+#' @param mpa_wdpa An `sf` object representing the MPA dataset.
+#'
+#' @return Saves an enriched MPA dataset (`MPA_covariates.Rdata`) with the following covariates:
+#' - **Environmental variables**: Chlorophyll-a (CHL), Sea Surface Temperature (SST), seamount distance, bathymetry.
+#' - **Geographic variables**: Distance to port and shore.
+#' - **Economic variable**: GDP per capita.
+#' - **Human activity metrics**: AIS reception quality, fishing effort (2021-2024).
+#' - **SAR fishing statistics**: Fishing activity for 2022-2024.
+#'
+#' @details
+#' 1. Computes CHL and SST for MPAs.
+#' 2. Measures the distance to the nearest seamount.
+#' 3. Extracts bathymetry, distance from ports and shore.
+#' 4. Matches GDP data from a raster dataset.
+#' 5. Joins precomputed covariates (HDI, ecosystem dependency, travel time, human footprint).
+#' 6. Integrates SAR-based fishing data (2022-2024).
+#' 7. Incorporates AIS reception data for MPAs.
+#' 8. Adds GFW-derived fishing effort (2021-2024).
+#'
+#' @examples
+#' calc_covariates_MPA(mpa_wdpa)
+#'
+
 calc_covariates_MPA <- function(mpa_wdpa){
   
   #Calculate CHL
@@ -87,9 +115,17 @@ calc_covariates_MPA <- function(mpa_wdpa){
                   unmatched_fishing_2023 = unmatched_fishing, 
                   sum_all_2023 = sum_all)
   
+  MPA_SAR_data_2024 <- SAR_stats_2024 %>%
+    distinct(id_iucn, .keep_all = T) %>%
+    dplyr::select(id_iucn, 
+                  fishing_2024 = fishing, 
+                  unmatched_fishing_2024 = unmatched_fishing, 
+                  sum_all_2024 = sum_all)
+  
   MPA_covariates <- MPA_covariates %>%
     left_join(MPA_SAR_data_2022, by = "id_iucn") %>%
     left_join(MPA_SAR_data_2023, by = "id_iucn") %>%
+    left_join(MPA_SAR_data_2024, by = "id_iucn") %>%
     dplyr::filter(id_iucn %in% all_mpas_SAR$id_iucn) 
   
   #ADD AIS RECEPTION
@@ -104,11 +140,13 @@ calc_covariates_MPA <- function(mpa_wdpa){
   MPA_wdpa_fishing_2021 <- process_fishing_effort(mpa_wdpa, 2021)
   MPA_wdpa_fishing_2022 <- process_fishing_effort(mpa_wdpa, 2022)
   MPA_wdpa_fishing_2023 <- process_fishing_effort(mpa_wdpa, 2023)
+  MPA_wdpa_fishing_2024 <- process_fishing_effort(mpa_wdpa, 2024)
   
   MPA_covariates <- MPA_covariates %>%
     left_join(MPA_wdpa_fishing_2021, by = "id_iucn") %>%
     left_join(MPA_wdpa_fishing_2022, by = "id_iucn") %>%
     left_join(MPA_wdpa_fishing_2023, by = "id_iucn") %>%
+    left_join(MPA_wdpa_fishing_2024, by = "id_iucn") %>%
     left_join(mpa_reception, by = "id_iucn")
 
   save(MPA_covariates, file = "output/MPA_covariates.Rdata")

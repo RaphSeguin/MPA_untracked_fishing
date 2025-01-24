@@ -1,3 +1,28 @@
+#' Normalize SAR Detections
+#'
+#' This function normalizes SAR detections in MPAs by accounting for the number 
+#' of satellite images covering each detection.
+#'
+#' @param SAR_mpa A dataframe containing SAR detections within MPAs.
+#' @param SAR_footprints_sf An `sf` object representing the spatial footprint of SAR images.
+#'
+#' @return The input `SAR_mpa` dataframe with two new columns:
+#' - `image_count`: Number of satellite images covering each detection.
+#' - `normalized_detection`: Detection value normalized by the image count.
+#'
+#' @details
+#' 1. Converts `SAR_mpa` to an `sf` object.
+#' 2. Joins detections with SAR image footprints.
+#' 3. Counts the number of images covering each detection.
+#' 4. Normalizes detections by dividing by the image count.
+#' 5. Merges results back into `SAR_mpa`.
+#'
+#' @examples
+#' SAR_mpa_normalized <- normalize_detections_all(SAR_mpa, SAR_footprints_sf)
+#'
+#' @export
+
+
 normalize_detections_all <- function(SAR_mpa, SAR_footprints_sf){
   
   #Convert to sf 

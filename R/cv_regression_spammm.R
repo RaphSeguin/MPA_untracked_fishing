@@ -1,3 +1,37 @@
+#' Cross-Validation for Regression Model (spaMM)
+#'
+#' This function performs **k-fold cross-validation** for a regression model using **linear mixed-effects modeling** (`lmer()`) 
+#' and evaluates its performance on both test and validation datasets.
+#'
+#' @param folds_regression A resampling object (`rsample` object) containing cross-validation folds.
+#' @param formula_regression A formula specifying the regression model.
+#' @param validation_set A dataframe containing the validation dataset for additional performance evaluation.
+#' @param pred_var A string specifying the name of the response variable in the dataset.
+#'
+#' @return A dataframe (`results_cv_regression`) containing cross-validation performance metrics:
+#' - `Fold`: Fold number.
+#' - `RMSE`: Root Mean Squared Error (test set).
+#' - `MAE`: Mean Absolute Error (test set).
+#' - `MedAE`: Median Absolute Error (test set).
+#' - `R2`: R-squared score (test set).
+#' - `RMSE_VAL`: Root Mean Squared Error (validation set).
+#' - `MAE_VAL`: Mean Absolute Error (validation set).
+#' - `R2_VAL`: R-squared score (validation set).
+#'
+#' @details
+#' 1. **Splits data into training and testing sets** for each cross-validation fold.
+#' 2. **Trains a linear mixed-effects regression model** (`lmer()`) on the training data.
+#' 3. **Predicts outcomes** on both the test set and validation set.
+#' 4. **Back-transforms log predictions** using the exponential function.
+#' 5. **Computes performance metrics**:
+#'    - RMSE, MAE, Median AE, and R² for both test and validation sets.
+#' 6. **Aggregates results across all folds** and calculates mean R² and R² for validation.
+#' 7. **Prints overall model performance** (`mean R²` and `mean R²_VAL`).
+#'
+#' @examples
+#' cv_results <- cv_regression_spammm(folds_regression, log(vessel_size) ~ ., validation_set, "vessel_size")
+#'
+
 cv_regression_spammm <- function(folds_regression, formula_regression, validation_set, pred_var){
   
   # Cross validation loop for spaMM

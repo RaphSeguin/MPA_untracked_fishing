@@ -1,24 +1,67 @@
+#' Generate and Save Figures for Fishing Predictions by IUCN Category
+#'
+#' This function processes fishing presence and effort predictions across multiple years, 
+#' computes fishing effort changes for **IUCN categories**, and generates visualizations 
+#' of fishing effort increases.
+#'
+#' @param mpa_model A dataframe containing MPA data with environmental and socioeconomic covariates.
+#' @param fishing_presence_2022 A dataframe with predicted fishing presence for **2022**.
+#' @param fishing_presence_2023 A dataframe with predicted fishing presence for **2023**.
+#' @param fishing_presence_2024 A dataframe with predicted fishing presence for **2024**.
+#' @param fishing_hours_2022 A dataframe with predicted fishing effort for **2022**.
+#' @param fishing_hours_2023 A dataframe with predicted fishing effort for **2023**.
+#' @param fishing_hours_2024 A dataframe with predicted fishing effort for **2024**.
+#'
+#' @return Saves the following outputs:
+#' - `figures/supp/IUCN_MPA_increase.jpg`: Increase in MPAs with fishing, grouped by IUCN category.
+#' - `figures/supp/IUCN_fishing_increase.jpg`: Predicted increase in fishing effort, grouped by IUCN category.
+#'
+#' @details
+#' 1. **Merges fishing presence and effort data** into `MPA_fishing`.
+#' 2. **Computes summary statistics**:
+#'    - Total fishing effort (`AIS_fishing_all`).
+#'    - Total SAR detections (`SAR_all`).
+#'    - Predicted total fishing effort (`predicted_fishing_all`).
+#' 3. **Calculates IUCN-level fishing effort increase**:
+#'    - **MPAs with increased fishing** (`n_predicted - n_observed`).
+#'    - **Percentage increase in MPAs with fishing**.
+#' 4. **Creates bar plots**:
+#'    - **Raw increase** in MPAs with fishing (`Top 20` IUCN categories).
+#'    - **Percentage increase** in MPAs with fishing (`Top 10` IUCN categories).
+#' 5. **Computes IUCN-level total fishing effort increase**:
+#'    - **Difference between observed and predicted fishing effort**.
+#'    - **Expresses increase as a percentage**.
+#' 6. **Saves all generated plots** as `.jpg` files.
+#'
+#' @examples
+#' figures_fishing_predictions_iucn(mpa_model, fishing_presence_2022, fishing_presence_2023, 
+#'                                  fishing_presence_2024, fishing_hours_2022, 
+#'                                  fishing_hours_2023, fishing_hours_2024)
+#'
+
 figures_fishing_predictions_iucn <- function(mpa_model,
-                                             fishing_presence_2022, fishing_presence_2023,
-                                             fishing_hours_2022, fishing_hours_2023){
+                                             fishing_presence_2022, fishing_presence_2023, fishing_presence_2024,
+                                             fishing_hours_2022, fishing_hours_2023, fishing_hours_2024){
   
-  #Object
+  # Object
   MPA_fishing <- mpa_model %>%
     st_drop_geometry()%>%
     left_join(fishing_presence_2022 %>% dplyr::select(id_iucn, fishing_presence_predicted_2022), by = "id_iucn") %>%
     left_join(fishing_presence_2023 %>% dplyr::select(id_iucn, fishing_presence_predicted_2023), by = "id_iucn") %>%
+    left_join(fishing_presence_2024 %>% dplyr::select(id_iucn, fishing_presence_predicted_2024), by = "id_iucn") %>%
     left_join(fishing_hours_2022 %>% dplyr::select(id_iucn, predicted_fishing_effort_2022), by = "id_iucn") %>%
     left_join(fishing_hours_2023 %>% dplyr::select(id_iucn, predicted_fishing_effort_2023), by = "id_iucn") %>%
-    mutate(AIS_fishing_all = AIS_fishing_2022 + AIS_fishing_2023,
-           SAR_all = sum_all_2022 + sum_all_2023,
-           SAR_matched_all = fishing_2022 + fishing_2023,
-           presence_observed = as.factor(ifelse(fishing_presence_2022 == "Fishing" | fishing_presence_2023 == "Fishing", 
+    left_join(fishing_hours_2024 %>% dplyr::select(id_iucn, predicted_fishing_effort_2024), by = "id_iucn") %>%
+    mutate(AIS_fishing_all = AIS_fishing_2022 + AIS_fishing_2023 + AIS_fishing_2024,
+           SAR_all = sum_all_2022 + sum_all_2023 + sum_all_2024,
+           SAR_matched_all = fishing_2022 + fishing_2023 + fishing_2024,
+           presence_observed = as.factor(ifelse(fishing_presence_2022 == "Fishing" | fishing_presence_2023 == "Fishing" | fishing_presence_2024 == "Fishing", 
                                                 "Fishing","No_fishing")),
-           presence_predicted = as.factor(ifelse(fishing_presence_predicted_2022 == "Fishing" | fishing_presence_predicted_2023 == "Fishing", 
+           presence_predicted = as.factor(ifelse(fishing_presence_predicted_2022 == "Fishing" | fishing_presence_predicted_2023 == "Fishing" | fishing_presence_predicted_2024 == "Fishing", 
                                                  "Fishing","No_fishing")),
-           predicted_fishing_all = predicted_fishing_effort_2022 + predicted_fishing_effort_2023)
+           predicted_fishing_all = predicted_fishing_effort_2022 + predicted_fishing_effort_2023 + predicted_fishing_effort_2024)
   
-  #Mpas with an increase in fishing
+  # MPAs with an increase in fishing
   IUCN_presence_increase <- MPA_fishing %>%
     left_join(MPA_final_vars %>% dplyr::select(id_iucn), by = "id_iucn") %>%
     group_by(iucn_cat) %>%
@@ -26,25 +69,25 @@ figures_fishing_predictions_iucn <- function(mpa_model,
             n_observed = sum(presence_observed == "Fishing"),
             n_predicted = sum(presence_predicted == "Fishing"),
             difference = n_predicted - n_observed,
-            difference_percentage = difference/n_observed * 100) %>%
+            difference_percentage = difference / n_observed * 100) %>%
     ungroup() 
   
-  #Raw
+  # Raw Increase
   raw_increase_presence <- IUCN_presence_increase %>%
     arrange(desc(difference)) %>%
     slice(1:20) %>%
-    ggplot(aes(reorder(iucn_cat,difference), difference)) + 
+    ggplot(aes(reorder(iucn_cat, difference), difference)) + 
     geom_bar(stat = "identity", fill = "#384B6A") + 
     coord_flip() +
     labs(x = " ",
          y = "Additional number of MPAs with fishing") +
     my_custom_theme()
   
-  #Percentage
+  # Percentage Increase
   percentage_increase_presence <- IUCN_presence_increase %>%
     arrange(desc(difference_percentage)) %>%
     slice(1:10) %>%
-    ggplot(aes(reorder(iucn_cat,difference_percentage), difference_percentage)) + 
+    ggplot(aes(reorder(iucn_cat, difference_percentage), difference_percentage)) + 
     geom_bar(stat = "identity", fill = "#384B6A") + 
     coord_flip() +
     labs(x = " ",
@@ -61,25 +104,25 @@ figures_fishing_predictions_iucn <- function(mpa_model,
   IUCN_increase <- MPA_fishing %>%
     left_join(MPA_final_vars %>% dplyr::select(id_iucn), by = "id_iucn") %>%
     group_by(iucn_cat) %>%
-    reframe(observed_fishing = sum(AIS_fishing_all)/1000,
-            predicted_fishing = sum(predicted_fishing_all)/1000,
+    reframe(observed_fishing = sum(AIS_fishing_all) / 1000,
+            predicted_fishing = sum(predicted_fishing_all) / 1000,
             difference_fishing = predicted_fishing - observed_fishing,
             percentage_increase = difference_fishing / observed_fishing * 100) %>%
     ungroup() %>%
     na.omit() %>%
     arrange(desc(difference_fishing)) %>%
-    slice(1:10) 
+    slice(1:10)
   
   # Create the stacked bar plot
-  raw_increase_fishing <- ggplot(IUCN_increase, aes(x = reorder(iucn_cat,difference_fishing), y = difference_fishing, fill = type)) +
-    geom_bar(stat = "identity",  fill = "#384B6A", size = 0.2, position = "stack") +
+  raw_increase_fishing <- ggplot(IUCN_increase, aes(x = reorder(iucn_cat, difference_fishing), y = difference_fishing, fill = type)) +
+    geom_bar(stat = "identity", fill = "#384B6A", size = 0.2, position = "stack") +
     coord_flip() +  # Flip coordinates for horizontal bars
     labs(x = " ", y = "Predicted increase in fishing effort (in thousands of hours)", 
          fill = "Type") +
     my_custom_theme() +
     theme(legend.position = "bottom")
   
-  #Express as percentage of increase
+  # Express as percentage of increase
   IUCN_increase <- MPA_fishing %>%
     left_join(MPA_final_vars %>% dplyr::select(id_iucn), by = "id_iucn") %>%
     group_by(iucn_cat) %>%
@@ -91,7 +134,7 @@ figures_fishing_predictions_iucn <- function(mpa_model,
     filter(predicted_fishing > 1000) %>%
     na.omit() %>%
     arrange(desc(percentage_increase)) %>%
-    slice(1:10) 
+    slice(1:10)
   
   # Create the stacked bar plot
   percentage_increase_fishing <- ggplot(IUCN_increase, aes(x = reorder(iucn_cat, percentage_increase), y = percentage_increase)) +
@@ -104,10 +147,7 @@ figures_fishing_predictions_iucn <- function(mpa_model,
           axis.text.y = element_text(size = 11)) +  # Reduce the size of x-axis labels
     ylim(0, 100)
   
-  IUCN_fishing_increase <- ggarrange(raw_increase_fishing,percentage_increase_fishing, nrow = 2 )
+  IUCN_fishing_increase <- ggarrange(raw_increase_fishing, percentage_increase_fishing, nrow = 2)
   
   ggsave(IUCN_fishing_increase, file = "figures/supp/IUCN_fishing_increase.jpg", width = 210, height = 297, units = "mm", dpi = 300)
-  
-  
-  
 }

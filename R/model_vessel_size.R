@@ -1,3 +1,33 @@
+#' Model Vessel Size in MPAs
+#'
+#' This function fits a **Gaussian spatial mixed-effects model** to predict 
+#' the **average vessel size (length)** within Marine Protected Areas (MPAs).
+#'
+#' @param mpa_vessel_model A dataframe containing vessel activity, environmental, and socioeconomic covariates for MPAs.
+#'
+#' @return A fitted model (`mod_spamm_size`) predicting vessel size, with outputs saved as:
+#' - `output/mod_spamm_size.Rdata`: The fitted model object.
+#' - `figures/supp/mod_spamm_size.csv`: Model coefficients summary.
+#'
+#' @details
+#' 1. **Filters MPAs with vessel presence** (`average_length > 0`).
+#' 2. **Removes duplicate geometries** to avoid redundancy.
+#' 3. **Filters MPAs within IUCN categories "I" to "VI"**.
+#' 4. **Removes missing values** (`na.omit()`).
+#' 5. **Applies a log transformation** to `average_length` (`log(average_length + 1)`).
+#' 6. **Fits a Gaussian GLMM** using `spaMM::fitme()`:
+#'    - Predictors: MPA size, productivity, SST, GDP, HDI, travel time, human footprint, depth, distance to shore.
+#'    - Random effect: `parent_iso` (country-level variation).
+#'    - Spatial structure: `Matern(1 | X + Y)`.
+#' 7. **Processes model output**:
+#'    - Extracts and renames coefficients for interpretability.
+#'    - Rounds numerical values and formats p-values.
+#'    - Saves results to a CSV file.
+#'
+#' @examples
+#' vessel_size_model <- model_vessel_size(mpa_vessel_model)
+#'
+
 model_vessel_size <- function(mpa_vessel_model){
   
   mpa_vessel_model_size <- mpa_vessel_model %>%

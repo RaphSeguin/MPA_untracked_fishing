@@ -1,3 +1,25 @@
+#' Calculate Chlorophyll-a (CHL) for MPAs
+#'
+#' This function extracts and processes Chlorophyll-a (CHL) data from NetCDF files 
+#' to calculate mean and standard deviation values for each Marine Protected Area (MPA).
+#'
+#' @param mpa_wdpa An `sf` object representing the MPA dataset.
+#'
+#' @return A dataframe with two columns:
+#' - `mean_chl`: Mean Chlorophyll-a concentration for each MPA.
+#' - `sd_chl`: Standard deviation of Chlorophyll-a concentration for each MPA.
+#'
+#' @details
+#' 1. Loads CHL data from NetCDF files in `data/covariates/CHL_covariates/`.
+#' 2. Extracts longitude (`lon`), latitude (`lat`), and CHL concentration (`chlor_a`).
+#' 3. Computes the mean and standard deviation of CHL at each location.
+#' 4. Converts CHL data into an `sf` object for spatial processing.
+#' 5. Joins CHL data with MPAs using the nearest centroid.
+#'
+#' @examples
+#' chl_mpa <- calculate_CHL(mpa_wdpa)
+#'
+
 calculate_CHL <- function(mpa_wdpa){
   
   # Example for loading NetCDF data

@@ -1,3 +1,34 @@
+#' Model Fishing Vessel Presence in MPAs
+#'
+#' This function fits a **Gamma spatial mixed-effects model** to predict 
+#' the number of **fishing vessels detected (SAR detections)** within Marine Protected Areas (MPAs).
+#'
+#' @param mpa_vessel_model A dataframe containing vessel activity, environmental, and socioeconomic covariates for MPAs.
+#'
+#' @return A fitted model (`mod_spamm`) predicting vessel presence, with outputs saved as:
+#' - `output/mod_spamm.Rdata`: The fitted model object.
+#' - `figures/supp/mod_spamm_output.csv`: Model coefficients summary.
+#'
+#' @details
+#' 1. **Filters MPAs with vessel presence** (`SAR_presence == "SAR"`).
+#' 2. **Removes duplicate geometries** to avoid redundant data.
+#' 3. **Applies a log transformation** to `sum_all` (`log10(sum_all + 1)`).
+#' 4. **Filters MPAs within IUCN categories "I" to "VI"**.
+#' 5. **Relevels IUCN categories**, setting "VI" as the reference.
+#' 6. **Fits a Gamma GLMM** using `spaMM::fitme()`:
+#'    - Predictors: MPA size, productivity, SST, GDP, HDI, travel time, human footprint, depth, distance to shore.
+#'    - Random effect: `parent_iso` (country-level variation).
+#'    - Spatial structure: `Matern(1 | X + Y)`.
+#' 7. **Processes model output**:
+#'    - Extracts and renames coefficients for interpretability.
+#'    - Rounds numerical values and formats p-values.
+#'    - Saves results to a CSV file.
+#' 8. **Generates and saves partial effect plots** using `plot_and_save_partial_effects()`.
+#'
+#' @examples
+#' vessel_model <- model_all_vessels(mpa_vessel_model)
+#'
+
 model_all_vessels <- function(mpa_vessel_model){
   
   mpa_vessel_model_regression <- mpa_vessel_model %>%

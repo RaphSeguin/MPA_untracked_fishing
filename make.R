@@ -1,31 +1,31 @@
 #' Run the Entire Project
 #'
+# ----------------- Loading required packages -------------------
 
-#-----------------Loading packages-------------------
-
-pkgs <- c("tidyverse","here","lme4","broom","tidymodels","parallel","cowplot","ggspatial","sf","RColorBrewer","ggridges",
-          "plotly","heatmaply","parsedate","birk","ggthemes","MASS","automap","pbmcapply","janitor","gfwr","arrow","beepr",
-          "sfarrow","corrplot","DHARMa", "harrypotter","wesanderson","ranger","missForest","rgdal","countrycode","ggpubr",
-          "data.table","randomForestExplainer","spatialRF","spaMM","DHARMa","glmmTMB","performance","spdep","rstatix",
-          "formatdown","ggrepel","tidync","nngeo","ncdf4","e1071","pROC","units","xml2","XML","rnaturalearth","ggExtra",
-          "raster","exactextractr","gstat","magrittr","scales","grid","gridExtra","XML","imputeTS","rgeos","visreg",
-          "piecewiseSEM","furrr","future","yardstick","kernelshap","gbm","spatialsample","s2","merTools","wdpar","stringi")
-nip <- pkgs[!(pkgs %in% installed.packages())]
-nip <- lapply(nip, install.packages, dependencies = TRUE)
-ip   <- unlist(lapply(pkgs, require, character.only = TRUE, quietly = TRUE))
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  tidyverse, here, lme4, broom, tidymodels, parallel, cowplot, ggspatial, sf, 
+  RColorBrewer, ggridges, plotly, heatmaply, parsedate, birk, ggthemes, MASS, 
+  automap, pbmcapply, janitor, gfwr, arrow, beepr, sfarrow, corrplot, DHARMa, 
+  harrypotter, wesanderson, ranger, missForest, countrycode, ggpubr, data.table, 
+  randomForestExplainer, spatialRF, spaMM, glmmTMB, performance, spdep, rstatix, 
+  formatdown, ggrepel, tidync, nngeo, ncdf4, e1071, pROC, units, xml2, XML, 
+  rnaturalearth, ggExtra, raster, exactextractr, gstat, magrittr, scales, grid, 
+  gridExtra, XML, imputeTS, visreg, piecewiseSEM, furrr, future, yardstick, 
+  kernelshap, gbm, spatialsample, s2, merTools, wdpar, stringi
+)
 
 key <- gfw_auth()
 sf_use_s2(F)
 
 #-----------------Loading all functions---------------------
 
-path = (here::here("R"))
-setwd(path)
-files.source = list.files(here::here("R"))
-sapply(files.source, source)
+source_with_check <- function(file) {
+  if (file.exists(file)) source(file) else warning(paste(file, "not found!"))
+}
+sapply(list.files(here::here("R"), full.names = TRUE), source_with_check)
 
 #-----------------Loading all data---------------------
-setwd(here())
 
 #Joining SAR_data with eez data which is not MPA
 #eez data from https://www.marineregions.org/downloads.php
@@ -46,21 +46,21 @@ SAR_footprints <- load_SAR_footprints()
 #Theme for plot
 #Base theme
 my_custom_theme <- function() {
-  theme_minimal(base_size = 18) +
+  theme_minimal(base_size = 20) +
     theme(
       text = element_text(family = "Times New Roman"),
       plot.title = element_text(size = 25, face = "bold", hjust = 0.5),
       axis.title = element_text(size = 18),
       axis.text = element_text(size = 18),
       legend.position = "bottom",
-      legend.title = element_text(size = 18),
-      legend.text = element_text(size = 18)
+      legend.title = element_text(size = 20),
+      legend.text = element_text(size = 20)
     )
 }
 
 #WDPA database
 #Download from
-#https://www.protectedplanet.net/en/thematic-areas/wdpa?tab=WDPA
+#https://www.protectedplanet.net/en/thematic-areas/wdpa?tab=WDP
 
 #Compiling WDPA database
 prep_mpa_data()
@@ -74,16 +74,18 @@ MPA_union <- mpa_wdpa %>%
   ungroup()
 
 save(MPA_union, file = "output/MPA_union.Rdata")
-
+  
 #Load Rdata
-path = (here::here("data"))
-setwd(path)
-files <- list.files(pattern=".Rdata|RData")
-data_list = lapply(files, load, .GlobalEnv)
+data_files <- list.files(here::here("data"), pattern = ".Rdata|RData", full.names = TRUE)
+for (file in data_files) {
+  if (file.exists(file)) {
+    load(file)
+  } else {
+    warning(paste("File not found:", file))
+  }
+}
 
 #####------ANALYSIS-------
-
-setwd(here())
 
 #INtersecting
 SAR_data <- create_SAR_data()
@@ -102,13 +104,13 @@ SAR_mpa <- st_join(SAR_data_sf %>% cbind(lonlat), mpa_wdpa,left = F) %>%
   mutate(year = substr(timestamp, 1, 4))
 
 #First, normalize detections by number of satellite overpasses
-SAR_footprints_sf <- st_as_sf(SAR_footprints, wkt = "footprint_wkt", crs = 4326)
+SAR_footprints_sf <- st_as_sf(SAR_footprints, wkt = "footprint_wkt", crs = 4326) 
 
 #Calculatre stats for EEZ
 SAR_eez_stats <- calculate_stats_eez()
 
 #Calculate stats for MPA data
-SAR_stats <- calculate_stats_mpa()
+SAR_stats <- calculate_stats_mpa() 
 
 #Calculate stats for MPA data per year
 SAR_mpa_final <- normalize_detections(SAR_mpa, SAR_footprints_sf)
@@ -116,6 +118,7 @@ save(SAR_mpa_final, file = "output/SAR_mpa_final.Rdata")
 
 SAR_stats_2022 <- calculate_stats(SAR_mpa_final, 2022)
 SAR_stats_2023 <- calculate_stats(SAR_mpa_final, 2023)
+SAR_stats_2024 <- calculate_stats(SAR_mpa_final, 2024)
 
 #Add mpas with 0 fishing
 MPA_no_fishing <- mpa_wdpa %>%
@@ -155,16 +158,16 @@ legend = c("I" = "#051D41",
            "EEZ" = "#9B3742")
 
 #Calculate covariates in each MPA
-MPA_covariates <- calc_covariates_MPA()
+MPA_covariates <- calc_covariates_MPA(mpa_wdpa)
 
 load("output/MPA_covariates.Rdata")
-load("output/SAR_stats.Rdata")
+load("output/SAR_stats.Rdata") 
 load("output/all_mpas_SAR.Rdata")
 load("output/SAR_eez_stats.Rdata")
 load("output/eez_no_mpa.Rdata")
 
 MPA_final_vars <- prep_data_for_analysis(SAR_stats, mpa_wdpa)
-EEZ_final_vars <- prep_eez_data_for_analysis(SAR_eez_stats, ezz_no_mpa)
+EEZ_final_vars <- prep_eez_data_for_analysis(SAR_eez_stats, eez_no_mpa)
 
 #Numbers
 describe_results()
@@ -179,7 +182,7 @@ model_fishing()
 
 #---Figures----
 
-#FIgure 1 
+#Figure 1 
 global_map()
 
 #Figure 2 
@@ -192,9 +195,5 @@ plot_effects()
 
 #Make supplementary
 make_supp(MPA_final_vars) 
-
-#Print various statistics on MPA data
-#open the function to check results
-describe_results()
 
 

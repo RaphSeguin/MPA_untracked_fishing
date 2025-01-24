@@ -1,9 +1,34 @@
+#' Plot Performance Distribution of Binomial and Regression Models
+#'
+#' This function generates **performance evaluation plots** for binomial classification (stage 1) 
+#' and regression models (stage 2) across the years **2022, 2023, and 2024**.
+#'
+#' @return Saves the following output:
+#' - `figures/supp/full_performance.jpg`: A combined figure showing performance metrics for both models.
+#'
+#' @details
+#' 1. **Processes binomial model performance**:
+#'    - Merges performance metrics (`F1 Score`, `Precision`, `Recall`, `ROC AUC`) from **2022, 2023, and 2024**.
+#'    - **Creates violin and jitter plots** to visualize performance distribution across years.
+#' 2. **Processes regression model performance**:
+#'    - Merges performance metrics (`RMSE`, `MAE`, `MedAE`, `R²`) from **2022, 2023, and 2024**.
+#'    - **Creates violin and jitter plots** for distribution visualization.
+#' 3. **Combines performance plots** for binomial and regression models.
+#' 4. **Saves the final figure** as a `.jpg` file with high resolution.
+#'
+#' @examples
+#' plot_performance_distribution()
+#'
+
+
 plot_performance_distribution <- function(){
   
-  
-  #Performance of stage 1 model
-  binomial_performance <- bind_rows(binomial_performance_2022 %>% mutate(model = "2022"),
-                                    binomial_performance_2023 %>% mutate(model = "2023"))
+  # Performance of stage 1 model
+  binomial_performance <- bind_rows(
+    binomial_performance_2022 %>% mutate(model = "2022"),
+    binomial_performance_2023 %>% mutate(model = "2023"),
+    binomial_performance_2024 %>% mutate(model = "2024")
+  )
   
   f1_score <- ggplot(binomial_performance, aes(model, F1_Score)) + 
     geom_jitter() + 
@@ -35,10 +60,12 @@ plot_performance_distribution <- function(){
   
   binomial_performance_plot <- ggarrange(f1_score, precision, recall, roc_auc, nrow = 4)
   
-  
-  #Performance of stage 2 model
-  regression_performance <- bind_rows(regression_performance_2022 %>% mutate(model = "2022"),
-                                      regression_performance_2023 %>% mutate(model = "2023"))
+  # Performance of stage 2 model
+  regression_performance <- bind_rows(
+    regression_performance_2022 %>% mutate(model = "2022"),
+    regression_performance_2023 %>% mutate(model = "2023"),
+    regression_performance_2024 %>% mutate(model = "2024")
+  )
   
   rmse <- ggplot(regression_performance, aes(model, RMSE)) + 
     geom_jitter() + 
@@ -75,5 +102,4 @@ plot_performance_distribution <- function(){
          height = 220 * 1.5,
          units = "mm",
          dpi = 300)
-  
 }

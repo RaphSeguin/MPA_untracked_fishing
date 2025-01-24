@@ -1,3 +1,32 @@
+#' Predict Fishing Presence Using a Binomial Model
+#'
+#' This function trains a **binomial logistic regression model** to predict fishing presence 
+#' in Marine Protected Areas (MPAs) based on SAR and AIS data.
+#'
+#' @param mpa_model A dataframe containing the data for modeling.
+#' @param formula_binomial A formula specifying the binomial logistic regression model.
+#' @param optimal_cutoff A numeric value representing the best probability threshold for classification.
+#' @param year An integer specifying the year for which predictions are made.
+#'
+#' @return A dataframe (`fishing_presence_data`) containing:
+#' - `id_iucn`: Unique MPA identifier.
+#' - `fishing_presence_<year>`: Observed fishing presence.
+#' - `fishing_presence_predicted_<year>`: Predicted fishing presence.
+#'
+#' @details
+#' 1. **Defines relevant column names** based on the input `year`.
+#' 2. **Trains a binomial logistic regression model** (`glm()`) on the full dataset.
+#' 3. **Processes model coefficients**, renaming variables for clarity.
+#' 4. **Filters MPAs for prediction**, keeping only those with unmatched fishing detections but no recorded fishing presence.
+#' 5. **Predicts fishing presence probabilities** for these MPAs.
+#' 6. **Applies the optimal probability cutoff** to classify fishing presence.
+#' 7. **Combines observed and predicted fishing presence** into a final dataset.
+#' 8. **Saves model outputs** to `figures/supp/mod_binomial_final_output_<year>.csv`.
+#'
+#' @examples
+#' fishing_predictions <- predict_fishing_presence(mpa_model, fishing_presence_2023 ~ ., 0.5, 2023)
+#'
+
 predict_fishing_presence <- function(mpa_model,formula_binomial, optimal_cutoff, year){
   
   #create the relevant column names based on the year

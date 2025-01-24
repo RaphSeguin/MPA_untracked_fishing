@@ -1,3 +1,31 @@
+#' Model Vessel Presence in MPAs
+#'
+#' This function fits a **binomial spatial mixed-effects model** to predict **vessel presence (SAR detections)**
+#' within Marine Protected Areas (MPAs) using environmental, socioeconomic, and spatial covariates.
+#'
+#' @param mpa_vessel_model A dataframe containing vessel activity, environmental, and socioeconomic covariates for MPAs.
+#'
+#' @return A fitted model (`mod_spamm_binomial`) predicting vessel presence and a CSV output summarizing model coefficients.
+#'
+#' @details
+#' 1. **Relevels IUCN categories**, setting "VI" as the reference category.
+#' 2. **Fits a spatial binomial mixed-effects model** using `spaMM::fitme()`:
+#'    - Predictors: MPA size, productivity, SST, GDP, HDI, travel time, human footprint, depth, distance to shore.
+#'    - Random effect: `parent_iso` (country-level variation).
+#'    - Spatial structure: `Matern(1 | X + Y)`.
+#' 3. **Computes AUC** using `pROC::roc()` for model performance evaluation.
+#' 4. **Checks collinearity** using `performance::check_collinearity()`.
+#' 5. **Extracts and renames model coefficients** for easier interpretation.
+#' 6. **Saves model results** as:
+#'    - `output/mod_spamm_binomial.Rdata` (model object).
+#'    - `figures/supp/mod_spamm_binomial_output.csv` (summary table).
+#' 7. **Plots and saves partial effects** for visualization.
+#'
+#' @examples
+#' vessel_model <- model_vessel_presence(mpa_vessel_model)
+#'
+
+
 model_vessel_presence <- function(mpa_vessel_model){
   
   mpa_vessel_model$iucn_cat <- relevel(mpa_vessel_model$iucn_cat, ref = "VI")
@@ -9,7 +37,7 @@ model_vessel_presence <- function(mpa_vessel_model){
                                 mean_chl + sd_chl + mean_sst + sd_sst + gdp + HDI + hf + MarineEcosystemDependency + 
                                 depth + dist_to_shore + travel_time + (1|parent_iso) + Matern(1 | X + Y),
                               data = mpa_vessel_model, family=binomial(),
-                              control.HLfit=list(NbThreads=6),method="PQL/L")
+                              control.HLfit=list(NbThreads=4),method="PQL/L")
   
   save(mod_spamm_binomial, file = "output/mod_spamm_binomial.Rdata")
   
@@ -21,7 +49,7 @@ model_vessel_presence <- function(mpa_vessel_model){
   
   #Check collinerarity
   check_collinearity(mod_spamm_binomial)
-  
+ 
   #Output
   # Output
   mod_spamm_binomial_output <- summary(mod_spamm_binomial, details = list(p_value = TRUE))$beta_table %>%
