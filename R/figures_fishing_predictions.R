@@ -58,8 +58,7 @@ figures_fishing_predictions <- function(mpa_model,
            presence_predicted = as.factor(ifelse(fishing_presence_predicted_2022 == "Fishing" | fishing_presence_predicted_2023 == "Fishing" | fishing_presence_predicted_2024 == "Fishing", 
                                                  "Fishing","No_fishing")),
            predicted_fishing_all = predicted_fishing_effort_2022 + predicted_fishing_effort_2023 + predicted_fishing_effort_2024) %>%
-    mutate(iucn_cat = ifelse(iucn_cat %in% c("Ia","Ib"), "I", iucn_cat)) %>%
-    filter(iucn_cat != "III")
+    mutate(iucn_cat = ifelse(iucn_cat %in% c("Ia","Ib"), "I", iucn_cat)) 
   
   # Correlation plot
   correlation <- MPA_fishing %>%
@@ -92,10 +91,9 @@ figures_fishing_predictions <- function(mpa_model,
           axis.line = element_line(color = "gray70"))
   
   # Save figures
-  ggsave("figures/correlation.jpg", plot = correlation, width = 148.5 * 1.5 , height = 105 * 1.5, units = "mm", dpi = 600)
+  ggsave("figures/correlation_plot.jpg", plot = correlation, width = 148.5 * 1.5 , height = 105 * 1.5, units = "mm", dpi = 600)
   
   ggsave("figures/correlation.svg", plot = correlation, width = 18.3 , height =  8.6 * 2, units = "cm")
-
   
   #Mpas with an increase in fishing
   MPA_presence_increase <- MPA_fishing %>%
@@ -175,8 +173,8 @@ figures_fishing_predictions <- function(mpa_model,
   
   ggsave(percentage_increase_full,
          file = "figures/percentage_increase_full.jpg",
-         width = 210 * 1,  # A4 width in mm
-         height = 148.5  * 1,  # Half of A4 height in mm
+         width = 210,  # A4 width in mm
+         height = 297,  # Half of A4 height in mm
          units = "mm", 
          dpi = 300)
   
@@ -229,8 +227,8 @@ figures_fishing_predictions <- function(mpa_model,
 
   ggsave(LME_increase,
          file = "figures/supp/LME_increase.jpg",
-         width = 300 ,
-         height = 290,
+         width = 297 * 1.2 ,
+         height = 297 * 1.2,
          units = "mm",
          dpi = 300)
 
@@ -267,7 +265,8 @@ figures_fishing_predictions <- function(mpa_model,
     st_coordinates()
   
   # Modify the data preparation for pie charts
-  dorl2 <- dorl2 %>%
+  dorl2 <- dorl %>%
+    mutate(X = centr[,1], Y = centr[,2]) %>%
     mutate(
       total_fishing_effort = observed_fishing + difference_fishing,
       tracked_proportion = observed_fishing / total_fishing_effort,
@@ -304,7 +303,7 @@ figures_fishing_predictions <- function(mpa_model,
     theme_custom
   
   # Save the updated map
-  ggsave(predicted_fishing_map, file = "figures/predicted_fishing_map.jpg",
+  ggsave(predicted_fishing_map, file = "figures/predicted_fishing_map_proba.jpg",
          width = 210,  # A4 width in mm
          height = 148.5,  # Half of A4 height in mm
          units = "mm",

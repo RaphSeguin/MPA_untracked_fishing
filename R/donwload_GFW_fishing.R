@@ -28,7 +28,7 @@ donwload_GFW_fishing <- function(){
   failed_iterations <- c()
 
   # Download GFW fishing effort in two steps (first and second half of the year)
-  fishing_effort_2024 <- lapply(44:length(grid_final_geometry), function(i) {
+  fishing_effort_2024 <- lapply(1:length(grid_final_geometry), function(i) {
     
     Sys.sleep(30)
     

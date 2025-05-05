@@ -31,36 +31,38 @@ plot_effects <- function(){
   load("output/mod_spamm_binomial.Rdata")
   load("output/mod_spamm.Rdata")
   load("output/mod_spamm_unmatched.Rdata")
-  vis_iucn <- visreg(mod_spamm_binomial, "iucn_cat", scale = "response", plot = FALSE)
+  
+  # vis_iucn <- visreg(mod_spamm_binomial, "iucn_cat", scale = "response", plot = FALSE)
   
   # Convert to a dataframe
-  vis_iucn_df <- vis_iucn$fit %>%
-    rename(iucn_cat = vis_iucn$meta$x, predicted_prob = visregFit, lower = visregLwr, upper = visregUpr) %>%
-    mutate(predicted_prob = predicted_prob * 100)
+  # vis_iucn_df <- vis_iucn$fit %>%
+  #   rename(iucn_cat = vis_iucn$meta$x, predicted_prob = visregFit, lower = visregLwr, upper = visregUpr) %>%
+  #   mutate(predicted_prob = predicted_prob * 100)
   
   #Predicted probabilities of model
   probs_presence <- predict(mod_spamm_binomial, mpa_vessel_model)
   mpa_vessel_model$probs <- probs_presence * 100
-  # 
-  # mpa_vessel_model %>%
-  #   group_by(iucn_cat) %>%
-  #   summarize(mean = mean(probs),
-  #             sd = sd(probs))
   
-  (fig_3_A <- ggplot(mpa_vessel_model, aes(iucn_cat, probs, fill = iucn_cat)) + 
+  # Calculate the weighted average for each IUCN category
+  # weighted_avg_by_iucn <- mpa_vessel_model %>%
+  #   group_by(iucn_cat) %>%
+  #   summarise(
+  #     weighted_avg = weighted.mean(probs, area_correct, na.rm = TRUE)
+  #   )
+  # 
+  # 
+  # Now plot the boxplot and add the red dots for the spatially weighted averages
+  (fig_3_A <- ggplot(mpa_vessel_model, aes(factor(iucn_cat, level = level_order), probs, fill = iucn_cat)) + 
     geom_boxplot(alpha = 0.8) +
     scale_fill_manual(values = legend, labels = level_order, name = "IUCN Category") +
-    # Transform predicted probabilities to match primary y-axis (-5 to 5)
-    geom_line(data = vis_iucn_df, aes(x = iucn_cat, y = predicted_prob), 
-              color = "red", group = 1, linewidth = 1) + 
     my_custom_theme() +
     labs(
       x = " ", 
       y = "Predicted probability of vessel presence (%)", 
       title = "Effect of IUCN Category on fishing vessel detections"
-    ))
-  
-  ggsave(fig_3_A, file = "figures/fig_3_A.jpg", width = 210 *2 , height = 92 *2 , units = "mm", dpi = 300)
+    )) 
+    
+  ggsave(fig_3_A, file = "figures/fig_3_A_proba.jpg", width = 210 *2 , height = 92 *2 , units = "mm", dpi = 300)
   
   ggsave(fig_3_A, file = "figures/fig_3_A.svg", width = 18.3*2 , height =  8.6 * 2 , units = "cm")
   
@@ -75,16 +77,25 @@ plot_effects <- function(){
     rownames_to_column("term") %>%
     mutate(model = "Vessel detections")
   
-  mod_spamm_unmatched_effects <- summary(mod_spamm_unmatched, details = list(p_value = TRUE))$beta_table
+  # mod_spamm_unmatched_effects <- summary(mod_spamm_unmatched, details = list(p_value = TRUE))$beta_table
   
-  mod_spamm_unmatched_effects <- mod_spamm_unmatched_effects %>%
+  # mod_spamm_unmatched_effects <- mod_spamm_unmatched_effects %>%
+  #   clean_names() %>%
+  #   as.data.frame() %>%
+  #   mutate(significance = ifelse(t_value < -1.96 & p_value < 0.01 |t_value > 1.96 & p_value < 0.01,"Significant","Not Significant")) %>%
+  #   rownames_to_column("term") %>%
+  #   mutate(model = "Untracked vessel detections")
+  # 
+  mod_spamm_binomial_effects <- summary(mod_spamm_binomial,  details = list(p_value = TRUE))$beta_table
+  
+  mod_spamm_binomial_effects <- mod_spamm_binomial_effects %>%
     clean_names() %>%
     as.data.frame() %>%
-    mutate(significance = ifelse(t_value < -1.96 & p_value < 0.01 |t_value > 1.96 & p_value < 0.01,"Significant","Not Significant")) %>%
+    mutate(significance = ifelse(t_value < -1.96 & p_value <0.01 |t_value > 1.96 & p_value < 0.01,"Significant","Not Significant")) %>%
     rownames_to_column("term") %>%
-    mutate(model = "Untracked vessel detections")
+    mutate(model = "Vessel presence")
   
-  mod_spamm_full = bind_rows(mod_spamm_effects,mod_spamm_unmatched_effects )
+  mod_spamm_full = bind_rows(mod_spamm_binomial_effects,mod_spamm_effects )
   
   (coefficient_plot = mod_spamm_full %>%
       ggplot(aes(x = reorder(term, -t_value), y = t_value)) +
@@ -108,7 +119,8 @@ plot_effects <- function(){
         legend.text = element_text(size = 20)
       ) + 
       theme(legend.title.align = 0.5) +
-      scale_y_continuous(breaks = c(-5, 0, 5, 10, 15, 20, 25, 30)) +
+      scale_y_continuous(breaks = c(-5, 0, 5, 10, 15, 20, 25, 30),
+                         expand = expansion(mult = c(0.1, 0.2))) +
       scale_x_discrete(labels = c(area_correct = "MPA area",
                                   depth_dist_to_shore = "Depth/Distance to shore",
                                   depth = "Depth",
@@ -133,7 +145,7 @@ plot_effects <- function(){
                                   marine2 = "Fully marine MPA")) +
       theme(legend.position = "bottom", legend.box = "vertical") +
       guides(shape = guide_legend(order = 1), 
-             colour = guide_legend(order = 2)))
+             colour = guide_legend(order = 2))) 
   
   #Iucn cat travel time
   partial_iucn_cat <-  visreg(mod_spamm,"travel_time",type="conditional",by="iucn_cat")$fit
@@ -165,7 +177,7 @@ plot_effects <- function(){
   # 
   # Save coefficient_plot to fill half of an A4 page
   ggsave(coefficient_plot, 
-         file = "figures/coefficient_plot.jpg", 
+         file = "figures/coefficient_plot_proba.jpg", 
          width = 210 *2 , height = 92 *2 ,
          units = "mm", 
          dpi = 300)

@@ -23,7 +23,6 @@
 
 calc_SAR_outside_mpa <- function(SAR_data_sf, eez_no_mpa){
   
-  #Getting all points which are not in MPAs 
   SAR_outside_mpas <- SAR_data_sf %>%
     # Drop all factor levels except two
     mutate(matched_category = droplevels(factor(matched_category, levels = c("unmatched", "fishing"))),
@@ -35,11 +34,11 @@ calc_SAR_outside_mpa <- function(SAR_data_sf, eez_no_mpa){
     filter(category %in% c("fishing", "unmatched_fishing")) %>%
     # Also if unmatched_fishing and length higher than 95% quantile then delete it 
     filter(length_m < 145) %>%
-    filter(length_m < quantile(SAR_data_sf$length_m, 0.95, na.rm = T)) %>%
-    #Convert to sf and join with EEZ
-    st_as_sf(coords = c("lon","lat"), crs = 4326) %>%
-    st_join(eez_no_mpa, left = F) %>%
-    distinct(unique_id, .keep_all = T)
+    filter(length_m < quantile(SAR_data_sf$length_m, 0.95, na.rm = TRUE)) %>%
+    # Convert to sf and join with EEZ
+    st_as_sf(coords = c("lon", "lat"), crs = 4326) %>%
+    st_join(eez_no_mpa, left = FALSE) %>%
+    distinct(unique_id, .keep_all = TRUE)
   
   return(SAR_outside_mpas)
   

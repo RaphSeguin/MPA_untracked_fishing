@@ -55,7 +55,7 @@ model_all_vessels <- function(mpa_vessel_model){
   
   save(mod_spamm, file = "output/mod_spamm.Rdata")
   
-  # print(pseudoR2(mod_spamm))
+  print(pseudoR2(mod_spamm))
   
   # Process the model output
   mod_spamm_output <- summary(mod_spamm, details = list(p_value = TRUE))$beta_table %>%

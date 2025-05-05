@@ -150,7 +150,7 @@ describe_results <- function(){
    ((nrow(SAR_eez_stats_unique %>% filter(matched_category == "unmatched")) + nrow(SAR_stats_unique %>% filter(matched_category == "unmatched"))))/(nrow(SAR_eez_stats_unique) + nrow(SAR_stats_unique))
    
    #Within MPAS
-   nrow(SAR_stats_unique %>% filter(matched_category == "unmatched"))/nrow(SAR_stats_unique)
+   nrow(SAR_stats_unique %>% filter(matched_category == "unmatched_fishing"))/nrow(SAR_stats_unique)
    
    #Within MPAs with fishing
    nrow(MPA_final_vars %>% filter(SAR_presence == "SAR" & unmatched_fishing > 0))

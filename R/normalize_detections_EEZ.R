@@ -40,11 +40,9 @@ normalize_detections_EEZ <- function(SAR_outside_mpas, SAR_footprints_sf){
   # Assuming each detection is unique (no duplicates in geometry)
   detections_normalized_eez <- SAR_eez %>%
     st_drop_geometry() %>%
-    left_join(detections_image_count_EEZ, by = "temp_id") %>%
-    mutate(normalized_detection_EEZ = 1 / image_count_eez)
+    left_join(detections_image_count_EEZ, by = "temp_id") 
   
   SAR_outside_mpas$image_count_EEZ <- detections_normalized_eez$image_count_eez
-  SAR_outside_mpas$normalized_detection_EEZ <- detections_normalized_eez$normalized_detection_EEZ
   
   return(SAR_outside_mpas)
   

@@ -38,6 +38,9 @@ prep_model_data <- function(MPA_covariates, mpa_wdpa){
            fishing_presence_2023 = relevel(fishing_presence_2023, ref = "No_fishing"),
            fishing_presence_2024 = relevel(fishing_presence_2024, ref = "No_fishing"),
            #number of vessels and log it
+           unmatched_fishing_2022 = ifelse(is.na(unmatched_fishing_2022), 0, unmatched_fishing_2022),
+           unmatched_fishing_2023 = ifelse(is.na(unmatched_fishing_2023), 0, unmatched_fishing_2023),
+           unmatched_fishing_2024 = ifelse(is.na(unmatched_fishing_2024), 0, unmatched_fishing_2024),
            fishing_2022 = ifelse(is.na(fishing_2022), 0, fishing_2022),
            fishing_2022_log = log(fishing_2022), 
            sum_all_2022 = ifelse(is.na(sum_all_2022), 0, sum_all_2022),

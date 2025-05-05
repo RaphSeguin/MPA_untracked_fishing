@@ -50,7 +50,7 @@ model_unmatched_vessels <- function(mpa_vessel_model){
   avail_thr <- parallel::detectCores(logical=FALSE) - 1L
   
   #Problem is 754
-    mod_spamm_unmatched <- fitme(unmatched_fishing ~  iucn_cat + marine + area_correct + 
+  mod_spamm_unmatched <- fitme(unmatched_fishing ~  iucn_cat + marine + area_correct + 
                                    mean_chl + sd_chl + mean_sst + sd_sst + gdp + HDI + hf + MarineEcosystemDependency + 
                                    depth + dist_to_shore + travel_time + (1|parent_iso) + Matern(1 | X + Y),
                        data = mpa_vessel_model_regression_unmatched, 

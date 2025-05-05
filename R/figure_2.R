@@ -45,25 +45,40 @@ figure_2 <- function(SAR_stats){
              "Not Reported" = "#D87458",
              "EEZ" = "#9B3742")
   
-  #Fig 2A
+  # Calculate spatially weighted mean for MPA_final_vars
+  weighted_mean_mpa <- MPA_final_vars %>%
+    group_by(iucn_cat) %>%
+    summarise(weighted_mean = weighted.mean(SAR_density, w = area_correct, na.rm = TRUE))  # Use area_correct for MPA_final_vars
+  
+  # Calculate spatially weighted mean for EEZ_final_vars
+  weighted_mean_eez <- EEZ_final_vars %>%
+    group_by(iucn_cat) %>%
+    summarise(weighted_mean = weighted.mean(SAR_density, w = eez_area, na.rm = TRUE))  # Use eez_area for EEZ_final_vars
+  
+  # Combine the two datasets for the weighted means
+  weighted_mean <- bind_rows(weighted_mean_mpa, weighted_mean_eez)
+  
+  # Add the spatially weighted mean as a red dot to the boxplot
   (total_iucn <- MPA_final_vars %>%
       bind_rows(EEZ_final_vars) %>%
-      filter(SAR_density > 0) %>%
-      ggplot(aes(factor(iucn_cat,level = level_order), log(SAR_density), fill = iucn_cat)) + 
+      # filter(SAR_density > 0) %>%
+      ggplot(aes(factor(iucn_cat, level = level_order), log(SAR_density), fill = iucn_cat)) + 
       scale_fill_manual(values = legend,
-                        breaks =c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported","EEZ"),
+                        breaks = c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported","EEZ"),
                         guide = "none") + 
       geom_jitter(alpha = 0.4, shape = ".") +
       geom_boxplot(alpha = 0.7) +
+      # geom_point(data = weighted_mean, aes(x = factor(iucn_cat, level = level_order),
+      #                                      y = log(weighted_mean)), color = "red", size = 3) +  # Add red dot
       labs(title = "A",
            x = " ",
            y = "Density of vessel detections (log scale)",
            fill = "IUCN Category") +
       my_custom_theme() +
-      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
       theme(plot.title = element_text(hjust = 0, face = "bold", size = 25)))
   
-  ggsave(total_iucn, file = "figures/total_iucn.svg",
+  ggsave(total_iucn, file = "figures/total_iucn_sum_proba.jpg",
          width = 18.3* 2 , 
          height = 8.6 * 2 ,
          units = "cm")
@@ -120,7 +135,7 @@ figure_2 <- function(SAR_stats){
       theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
       theme(plot.title = element_text(hjust = 0, face = "bold", size = 25)))
   
-  ggsave(ratio_iucn, file = "figures/ratio_iucn.svg",
+  ggsave(ratio_iucn, file = "figures/ratio_iucn_sum_proba.jpg",
          width = 18.3 *2, 
          height = 8.6 * 2 ,
          units = "cm")
@@ -142,7 +157,7 @@ figure_2 <- function(SAR_stats){
     guides(fill=guide_legend(nrow=4,byrow=TRUE))+
       theme(plot.title = element_text(hjust = 0, face = "bold", size = 25)))
     
-  ggsave(matched_unmatched_cor, file = "figures/matched_unmatched_cor.svg",
+  ggsave(matched_unmatched_cor, file = "figures/matched_unmatched_cor_sum_proba.jpg",
          width = 18.3 *2, 
          height = 8.6 * 2 ,
          units = "cm")

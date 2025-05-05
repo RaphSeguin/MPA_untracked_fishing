@@ -10,7 +10,7 @@ pacman::p_load(
   harrypotter, wesanderson, ranger, missForest, countrycode, ggpubr, data.table, 
   randomForestExplainer, spatialRF, spaMM, glmmTMB, performance, spdep, rstatix, 
   formatdown, ggrepel, tidync, nngeo, ncdf4, e1071, pROC, units, xml2, XML, 
-  rnaturalearth, ggExtra, raster, exactextractr, gstat, magrittr, scales, grid, 
+  rnaturalearth, ggExtra, raster, exactextractr, gstat, magrittr, scales, grid, fs,
   gridExtra, XML, imputeTS, visreg, piecewiseSEM, furrr, future, yardstick, 
   kernelshap, gbm, spatialsample, s2, merTools, wdpar, stringi
 )
@@ -71,7 +71,10 @@ load("data/mpa_wdpa.Rdata")
 MPA_union <- mpa_wdpa %>%
   group_by(parent_iso) %>%
   reframe(geometry = st_union(geometry)) %>%
-  ungroup()
+  ungroup() %>%
+  st_as_sf() %>%
+  mutate(country = countrycode(parent_iso, "iso3c", "country.name")) %>%
+  mutate(area = as.numeric(set_units(st_area(.))))
 
 save(MPA_union, file = "output/MPA_union.Rdata")
   
@@ -103,7 +106,7 @@ SAR_mpa <- st_join(SAR_data_sf %>% cbind(lonlat), mpa_wdpa,left = F) %>%
   #Add year
   mutate(year = substr(timestamp, 1, 4))
 
-#First, normalize detections by number of satellite overpasses
+  #First, normalize detections by number of satellite overpasses
 SAR_footprints_sf <- st_as_sf(SAR_footprints, wkt = "footprint_wkt", crs = 4326) 
 
 #Calculatre stats for EEZ
@@ -141,7 +144,7 @@ all_mpas_SAR <- mpa_wdpa %>%
 save(all_mpas_SAR, file = "output/all_mpas_SAR.Rdata")
 
 #Function to download GFW data
-download_GFW_data()
+download_GFW_data(mpa_wdpa, years = 2021:2024)
 
 #----MODELLING-------
 
@@ -168,6 +171,26 @@ load("output/eez_no_mpa.Rdata")
 
 MPA_final_vars <- prep_data_for_analysis(SAR_stats, mpa_wdpa)
 EEZ_final_vars <- prep_eez_data_for_analysis(SAR_eez_stats, eez_no_mpa)
+
+# Calculate overall area-weighted mean
+overall_weighted_mean <- weighted.mean(EEZ_final_vars$SAR_density, 
+                                       EEZ_final_vars$eez_area, 
+                                       na.rm = TRUE)
+
+overall_mean = data.frame(iucn_cat = "Overall", weighted_mean_SAR = overall_weighted_mean)
+
+# Print overall result
+cat("Overall area-weighted mean SAR density:", overall_weighted_mean, "\n")
+
+
+result_by_category <- MPA_final_vars %>%
+  group_by(iucn_cat) %>%
+  summarize(weighted_mean_SAR = weighted.mean(SAR_density, area_correct, na.rm = TRUE)) %>%
+  rbind(overall_mean)
+
+# Print results by category
+print(result_by_category)
+
 
 #Numbers
 describe_results()

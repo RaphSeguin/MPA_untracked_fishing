@@ -67,22 +67,18 @@ prep_mpa_data <- function() {
   
   #Now keeping only MPAs which fall withing range of study area
   # #downloaded from GFW
-  # load("data/SAR_footprints.Rdata")
-  # 
-  # # Step 1: Convert to sf and union the geometries
-  # study_area <- SAR_footprints %>%
-  #   st_as_sf(wkt = "footprint_wkt", crs = 4326) 
-  # 
-  # st_write(study_area, dsn = "data/study_area.shp")
-  # 
-  # study_area <- st_read("data/study_area.shp")
-  # 
-  # study_area_clean <- study_area %>%
-  #   st_simplify(dTolerance = 0.1) %>%
-  #   st_buffer(0.1) %>%
-  #   st_union() 
-  # 
-  # st_write(study_area_clean, dsn = "data/study_area_clean.shp")
+  load("data/SAR_footprints.Rdata")
+
+  # Step 1: Convert to sf and union the geometries
+  study_area <- SAR_footprints %>%
+    st_as_sf(wkt = "footprint_wkt", crs = 4326)
+
+  study_area_clean <- study_area %>%
+    st_simplify(dTolerance = 0.1) %>%
+    st_buffer(0.1) %>%
+    st_union()
+
+  st_write(study_area_clean, dsn = "data/study_area_clean.shp", )
   
   study_area_clean <- st_read("data/study_area_clean.shp")
 

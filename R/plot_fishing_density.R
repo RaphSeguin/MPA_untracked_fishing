@@ -77,8 +77,8 @@ plot_fishing_density <- function(mpa_model,
     # Average density over 3 years
     mutate(AIS_average_density = rowMeans(dplyr::select(., AIS_fishing_2022_density, AIS_fishing_2023_density, AIS_fishing_2024_density), na.rm = TRUE),
            predicted_average_density = rowMeans(dplyr::select(., predicted_fishing_effort_2022_density, 
-                                                              predicted_fishing_effort_2023_density, predicted_fishing_effort_2024_density), na.rm = TRUE)) %>%
-    filter(predicted_average_density > 0)
+                                                              predicted_fishing_effort_2023_density, predicted_fishing_effort_2024_density), na.rm = TRUE)) 
+    # filter(predicted_average_density > 0)
   
   #Plot density by IUCN cat
   level_order <- c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported","EEZ") 
@@ -93,28 +93,65 @@ plot_fishing_density <- function(mpa_model,
              "Not Reported" = "#D87458",
              "EEZ" = "#9B3742")
   
-  #plotting total number of  fishing vessels in MPAs against IUCN Category
-  (density_by_iucn <- MPA_fishing %>%
-      ggplot(aes(factor(iucn_cat,level = level_order), log(predicted_average_density), fill = iucn_cat)) + 
+  # Express as percentage of increase
+  IUCN_increase <- MPA_fishing %>%
+    filter(iucn_cat %in% c("I","II","IV","V","VI")) %>%
+    left_join(MPA_final_vars %>% dplyr::select(id_iucn), by = "id_iucn") %>%
+    group_by(iucn_cat) %>%
+    reframe(n = n(),
+            observed_fishing = sum(AIS_fishing_all),
+            predicted_fishing = sum(predicted_fishing_all),
+            difference_fishing = predicted_fishing - observed_fishing,
+            percentage_increase = difference_fishing / observed_fishing * 100) %>%
+    ungroup() %>%
+    filter(predicted_fishing > 1000) %>%
+    na.omit() %>%
+    arrange(desc(percentage_increase)) %>%
+    slice(1:10)
+  
+  # Create the stacked bar plot
+  (percentage_increase_fishing <- ggplot(IUCN_increase, aes(x = reorder(iucn_cat, percentage_increase), y = percentage_increase, fill = iucn_cat)) +
+    geom_bar(stat = "identity", size = 0.2, position = "stack") +
       scale_fill_manual(values = legend,
                         breaks =c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported"),
                         guide = "none") + 
-      geom_jitter(alpha = 0.4, shape = ".") +
-      geom_boxplot(alpha = 0.7) +
+    coord_flip() +  # Flip coordinates for horizontal bars
+    labs(x = "", y = "Percentage increase in fishing effort", 
+         fill = "Type") +
+    my_custom_theme() +
+    theme(legend.position = "bottom",
+          axis.text.y = element_text(size = 20)) +  # Reduce the size of x-axis labels
+    ylim(0, 100))
+  
+  #plotting total number of  fishing vessels in MPAs against IUCN Category
+  (density_by_iucn <- MPA_fishing %>%
+      filter(iucn_cat %in% c("I", "II", "IV", "V", "VI")) %>%
+      group_by(iucn_cat) %>%
+      reframe(
+        average_density = mean(predicted_average_density, na.rm = TRUE),
+        sd_density = sd(predicted_average_density, na.rm = TRUE),
+        spatially_weighted_mean = weighted.mean(predicted_average_density, area_correct, na.rm = TRUE)
+      ) %>%
+      ungroup() %>%
+      ggplot(aes(reorder(iucn_cat, spatially_weighted_mean), spatially_weighted_mean, fill = iucn_cat)) + 
+      coord_flip() +
+      scale_fill_manual(values = legend,
+                        breaks =c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported"),
+                        guide = "none") + 
+      geom_bar(stat = "identity", size = 0.2) +
       labs(x = " ",
-           y = "Predicted fishing density log(hours/km²)",
+           y = "Average fishing density (hours/km²/year)",
            fill = "IUCN Category") +
       my_custom_theme() +
-      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)))
+      theme(legend.position = "bottom",
+            axis.text.y = element_text(size = 20)))
   
-  ggsave(density_by_iucn,
-         file = "figures/density_by_iucn.jpg", 
-         width = 297, height = 125, units = "mm",dpi=600)
+  IUCN_fishing_increase <- ggarrange(percentage_increase_fishing, density_by_iucn, nrow = 2)
   
-  ggsave(density_by_iucn,
+  ggsave(IUCN_fishing_increase,
          file = "figures/density_by_iucn.svg", 
-         width = 18.3*2 , height =  8.6 * 2 , units = "cm")
-  
+         width = 210, height = 210, units = "mm",dpi=600)
+
   #IUCN
   MPA_fishing_IUCN <- MPA_fishing %>%
     group_by(iucn_cat) %>%
@@ -126,10 +163,12 @@ plot_fishing_density <- function(mpa_model,
   #COUNTRY
   MPA_fishing_IUCN <- MPA_fishing %>%
     left_join(MPA_final_vars %>% dplyr::select(id_iucn, country), by = "id_iucn") %>%
+    left_join(MPA_union %>% dplyr::select(country, area) %>% st_drop_geometry(), by = "country") %>%
     group_by(country) %>%
     reframe(number = n(),
             density = mean(predicted_average_density),
-            density_sd =  sd(predicted_average_density)) %>%
+            density_sd =  sd(predicted_average_density),
+            spatially_weighted_mean = weighted.mean(predicted_average_density, area, na.rm = TRUE)) %>%
     ungroup() %>%
     filter(number > 10) %>%
     arrange(desc(density)) %>%

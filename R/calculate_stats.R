@@ -30,36 +30,38 @@
 
 calculate_stats <- function(SAR_mpa_final, year_selected){
   
-  # Create dynamic column names based on the year_selected
+  # Define dynamic column names
   image_count_col <- paste0("image_count_", year_selected)
   normalized_detection_col <- paste0("normalized_detection_", year_selected)
   
-  #For each MPA, calculating the number of unmatched fishing boats, the number of unmatched fishing boats/km^2 and the ratio between matched and unmatched
   SAR_stats <- SAR_mpa_final %>%
     st_drop_geometry() %>%
-    # Only keep detections where at least 20 images were taken
-    filter((!is.na(.data[[image_count_col]]) & .data[[image_count_col]] >= 20)) %>%
+    # 1. Keep only detections where at least 20 images were taken
+    filter(!is.na(.data[[image_count_col]]) & .data[[image_count_col]] >= 20) %>%
+    # 2. Filter for the selected year
     filter(year == year_selected) %>%
-    # Cleaning data 
-    # Converting country name
-    mutate(country = countrycode(iso3, origin="iso3c", destination="country.name")) %>%
-    # Drop all factor levels except two
+    # 3. Drop all factor levels except unmatched and fishing
     mutate(matched_category = droplevels(factor(matched_category, levels = c("unmatched", "fishing"))),
            matched_category = as.character(matched_category)) %>%
-    # If 90% sure that boat is fishing, it is unmatched and fishing
-    mutate(category = as.factor(ifelse(matched_category == "unmatched" & fishing_score >= 0.9, "unmatched_fishing",
-                                       matched_category))) %>%
-    # Keep only fishing and unmatched_fishing
+    # 4. If >= 90% sure it's fishing, recode unmatched as unmatched_fishing
+    mutate(category = as.factor(ifelse(matched_category == "unmatched" & fishing_score >= 0.9,
+                                       "unmatched_fishing", matched_category))) %>%
+    # 5. Keep only fishing and unmatched_fishing
     filter(category %in% c("fishing", "unmatched_fishing")) %>%
-    # Also if unmatched_fishing and length higher than 90% quantile then delete it 
+    # 6. Filter out very large vessels
     filter(length_m < 145) %>%
-    filter(length_m < quantile(SAR_mpa_final$length_m, 0.95, na.rm = T)) %>%
-    # Calculate, using dynamic column names
+    filter(length_m < quantile(SAR_mpa_final$length_m, 0.95, na.rm = TRUE)) %>%
+    # 7. Normalize detection using dynamic column name
+    mutate(
+      !!normalized_detection_col := 1 / .data[[image_count_col]]
+    ) %>%
+    # 8. Calculate match count per MPA and category
     group_by(id_iucn, category) %>%
     mutate(match_count = sum(.data[[normalized_detection_col]], na.rm = TRUE)) %>%
     ungroup() %>%
-    # Calculate stats
-    pivot_wider(names_from = "category", values_from = "match_count") 
+    # 9. Reshape for summary
+    pivot_wider(names_from = "category", values_from = "match_count")
+  
   
   # Function to coalesce columns
   coalesce_by_column <- function(df) {

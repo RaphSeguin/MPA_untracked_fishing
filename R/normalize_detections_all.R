@@ -45,11 +45,9 @@ normalize_detections_all <- function(SAR_mpa, SAR_footprints_sf){
   # Assuming each detection is unique (no duplicates in geometry)
   detections_normalized <- SAR_mpa_sf %>%
     st_drop_geometry() %>%
-    left_join(detections_image_count, by = "temp_id") %>%
-    mutate(normalized_detection = 1 / image_count)
+    left_join(detections_image_count, by = "temp_id") 
   
   SAR_mpa$image_count <- detections_normalized$image_count
-  SAR_mpa$normalized_detection <- detections_normalized$normalized_detection
   
   return(SAR_mpa)
   

@@ -1,57 +1,67 @@
-#' Calculate Chlorophyll-a (CHL) for MPAs
-#'
-#' This function extracts and processes Chlorophyll-a (CHL) data from NetCDF files 
-#' to calculate mean and standard deviation values for each Marine Protected Area (MPA).
-#'
-#' @param mpa_wdpa An `sf` object representing the MPA dataset.
-#'
-#' @return A dataframe with two columns:
-#' - `mean_chl`: Mean Chlorophyll-a concentration for each MPA.
-#' - `sd_chl`: Standard deviation of Chlorophyll-a concentration for each MPA.
-#'
-#' @details
-#' 1. Loads CHL data from NetCDF files in `data/covariates/CHL_covariates/`.
-#' 2. Extracts longitude (`lon`), latitude (`lat`), and CHL concentration (`chlor_a`).
-#' 3. Computes the mean and standard deviation of CHL at each location.
-#' 4. Converts CHL data into an `sf` object for spatial processing.
-#' 5. Joins CHL data with MPAs using the nearest centroid.
-#'
-#' @examples
-#' chl_mpa <- calculate_CHL(mpa_wdpa)
-#'
-
-calculate_CHL <- function(mpa_wdpa){
+download_chlorophyll <- function() {
   
-  # Example for loading NetCDF data
-  nc_files <- list.files(path = "data/covariates/CHL_covariates", pattern = "\\.nc$", full.names = TRUE)
+  # Load required packages
+  library(rerddap)
+  library(lubridate)
   
-  # Load and process each NetCDF file
-  chl_data <- map_dfr(nc_files, function(file) {
-    tidync(file) %>%
-      hyper_tibble() %>%
-      dplyr::select(lon, lat, chlor_a)
-  })
+  # Set up the download directory
+  download_dir <- "chlorophyll_data"
+  dir.create(download_dir, showWarnings = FALSE)
   
-  # Calculate mean and standard deviation of SST
-  chl_summary <- chl_data %>%
-    group_by(lon, lat) %>%
-    summarise(
-      mean_chl = mean(chlor_a, na.rm = TRUE),
-      sd_chl = sd(chlor_a, na.rm = TRUE)
-    ) %>%
-    ungroup()
+  # ERDDAP dataset ID for global chlorophyll (MODIS-Aqua)
+  chl_dataset <- "erdMH1chlamday"
   
-  # # Convert sst_summary to an sf object
-  chl_sf <- st_as_sf(chl_summary, coords = c("lon", "lat"), crs = 4326)
+  # Set up time period (monthly from 2017 to 2024)
+  start_date <- ymd("2017-01-01")
+  end_date <- ymd("2024-12-31")
   
-  #Calculacate centroids of mpa
-  mpa_centroids <- st_centroid(mpa_wdpa)
+  # Generate sequence of months
+  months_seq <- seq(start_date, end_date, by = "month")
   
-  # # Spatial join of SST points with MPA polygons
-  chl_mpa <- st_join(mpa_centroids, chl_sf, join = st_nearest_feature) %>%
-    st_drop_geometry() %>%
-    dplyr::select(mean_chl, sd_chl)
+  # Loop through each month and download data
+  for (i in 1:length(months_seq)) {
+    current_date <- months_seq[i]
+    
+    # Format dates for ERDDAP query
+    date_str <- format(current_date, "%Y-%m-%d")
+    end_of_month <- ceiling_date(current_date, "month") - days(1)
+    end_date_str <- format(end_of_month, "%Y-%m-%d")
+    
+    # Format filename with year and month
+    filename <- paste0(download_dir, "/chlorophyll_", format(current_date, "%Y_%m"), ".nc")
+    
+    # Skip if file already exists
+    if (file.exists(filename)) {
+      cat("File", filename, "already exists. Skipping.\n")
+      next
+    }
+    
+    cat("Downloading data for", format(current_date, "%Y-%m"), "\n")
+    
+    # Try to download the data
+    tryCatch({
+      # Set up the ERDDAP query with 1° resolution
+      chl_data <- griddap(chl_dataset,
+                          latitude = c(-90, 90),
+                          longitude = c(-180, 180),
+                          time = c(date_str, end_date_str),
+                          fields = "chlorophyll",
+                          stride = c(1, 1, 1),  # Adjust stride for approx 1° resolution
+                          fmt = "nc",
+                          url = "https://coastwatch.pfeg.noaa.gov/erddap/")
+      
+      # Copy the downloaded file to our desired filename
+      file.copy(chl_data$summary$filename, filename)
+      
+      cat("Successfully downloaded", filename, "\n")
+      
+      # Add a small delay to avoid overwhelming the server
+      Sys.sleep(2)
+      
+    }, error = function(e) {
+      cat("Error downloading data for", format(current_date, "%Y-%m"), ":", e$message, "\n")
+    })
+  }
   
-  return(chl_mpa)
-  
+  cat("Download process completed.\n")
 }

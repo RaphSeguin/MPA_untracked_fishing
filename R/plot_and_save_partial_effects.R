@@ -96,11 +96,11 @@ plot_and_save_partial_effects <- function(model, data, model_name) {
   }
   
   # Arrange the plots together with 3 plots per row
-  plot_grid <- do.call("grid.arrange", c(plot_list, ncol = 3))
+  plot_grid <- do.call("grid.arrange", c(plot_list, ncol = 2))
   
   # Save the plot to a file
   file_name <- paste0("figures/supp/", model_name, "_partial_effects.png")
-  ggsave(file_name, plot_grid, width = 297*2.3, height = 210*1.5, units ="mm")
+  ggsave(file_name, plot_grid, width = 297 * 1.75, height = 297 * 1.3, units ="mm")
   
   # Display the saved plot
   grid.newpage()

@@ -25,6 +25,8 @@ calculate_stats_outside_mpas <- function(SAR_eez_final){
   
   #For each MPA, calculating the number of unmatched fishing boats, the number of unmatched fishing boats/km^2 and the ratio between matched and unmatched
   SAR_stats_EEZ <- SAR_eez_final %>%
+    filter(image_count_EEZ >= 20) %>%
+    mutate(normalized_detection_EEZ = 1/image_count_EEZ) %>%
     #Correct area
     st_drop_geometry() %>%
     # Calculate, using dynamic column names

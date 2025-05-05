@@ -29,7 +29,6 @@
 
 calculate_stats_all <- function(SAR_mpa_all){
   
-  #For each MPA, calculating the number of unmatched fishing boats, the number of unmatched fishing boats/km^2 and the ratio between matched and unmatched
   SAR_stats <- SAR_mpa_all %>%
     st_drop_geometry() %>%
     # Only keep detections where at least 20 images were taken
@@ -42,15 +41,18 @@ calculate_stats_all <- function(SAR_mpa_all){
                                        matched_category))) %>%
     # Keep only fishing and unmatched_fishing
     filter(category %in% c("fishing", "unmatched_fishing")) %>%
-    # Also if unmatched_fishing and length higher than 90% quantile then delete it 
+    # Filter out very large vessels
     filter(length_m < 145) %>%
-    filter(length_m < quantile(SAR_mpa_all$length_m, 0.95, na.rm = T)) %>%
-    # Calculate, using dynamic column names
+    filter(length_m < quantile(SAR_mpa_all$length_m, 0.95, na.rm = TRUE)) %>%
+    # Normalize detection
+    mutate(normalized_detection = 1/image_count) %>%
+    # Calculate match count per MPA and category
     group_by(id_iucn, category) %>%
-    mutate(match_count = sum(normalized_detection,na.rm = T)) %>%
+    mutate(match_count = sum(normalized_detection, na.rm = TRUE)) %>%
     ungroup() %>%
-    # Calculate stats
-    pivot_wider(names_from = "category", values_from = "match_count") 
+    # Reshape for summary
+    pivot_wider(names_from = "category", values_from = "match_count")
+  
   
   # Function to coalesce columns
   coalesce_by_column <- function(df) {

@@ -22,9 +22,7 @@ make_supp <- function(MPA_final_vars){
     mutate(area = set_units(st_area(.),"km^2"))
   
   sum(MPA_union$area)/sum(MPA_union_all$area) * 100
-  
 
-  
   #World for maps
   world <- rnaturalearth::ne_countries(scale = "large")
 
@@ -61,7 +59,14 @@ make_supp <- function(MPA_final_vars){
   ggsave(MPAs_included, file = "figures/supp/MPAs_included.jpg", width = 297, height = 105, units = "mm", dpi = 300)
   
   #Number of MPAs by IUCN category, separated by fishing presence or absence,
-  n_mpas_vessels_iucn_cat <- ggplot(MPA_final_vars, aes(x = factor(iucn_cat, levels = level_order), fill = SAR_presence)) +
+  mpa_percentages <- MPA_final_vars %>%
+    group_by(iucn_cat, SAR_presence) %>%
+    summarise(count = n()) %>%
+    group_by(iucn_cat) %>%
+    mutate(percentage = count / sum(count) * 100)  # Calculate percentage
+  
+  # Create the bar plot with percentages on top of the bars
+  (n_mpas_vessels_iucn_cat <- ggplot(MPA_final_vars, aes(x = factor(iucn_cat, levels = level_order), fill = SAR_presence)) +
     geom_bar(position = "dodge", width = 0.7) +
     scale_fill_manual(values = c("SAR" = "#051D41", "No_SAR" = "#8B0000"), labels = c("No vessels","Vessels")) + 
     labs(title = "Number of MPAs by IUCN category and vessel presence",
@@ -69,11 +74,11 @@ make_supp <- function(MPA_final_vars){
          y = "Number of MPAs",
          fill = "Vessel presence/absence") +
     my_custom_theme() +
-    theme(
-      legend.position = "bottom"
-    )
+    theme(legend.position = "bottom") +
+    geom_text(data = mpa_percentages, aes(x = factor(iucn_cat, levels = level_order), y = count, label = paste0(round(percentage, 0), "%")), 
+              position = position_dodge(width = 0.8), vjust = -0.5, size = 4))
   
-  ggsave(n_mpas_vessels_iucn_cat, file = "figures/supp/n_mpas_vessels_iucn_cat.jpg",
+  ggsave(n_mpas_vessels_iucn_cat, file = "figures/supp/n_mpas_vessels_iucn_cat_sum_probabilities.jpg",
          width = 297, height = 210, units = "mm", dpi = 300)
   
   #Time series
@@ -119,6 +124,39 @@ make_supp <- function(MPA_final_vars){
     ylim(0, 150000)
   
   ggsave(SAR_time_series, file = "figures/supp/SAR_time_series.jpg", width = 297, height = 210, units = "mm", dpi = 300)
+  
+  #N images
+  # Create a monthly column and count unique scene_id
+  SAR_images_monthly <- SAR_footprints %>%
+    st_drop_geometry() %>%
+    mutate(month = floor_date(date, "month")) %>%
+    group_by(month) %>%
+    summarize(n_images = n_distinct(scene_id)) %>%
+    ungroup()
+  
+  SAR_image_series <- ggplot(SAR_images_monthly, aes(x = month, y = n_images)) +
+    geom_line(color = "#56B4E9", size = 1) +
+    labs(
+      title = "Monthly number of unique SAR scenes (2022–2024)",
+      x = "Month",
+      y = "Number of SAR images"
+    ) +
+    scale_x_date(date_labels = "%b %Y", date_breaks = "3 months") +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      plot.title = element_text(size = 16, face = "bold", hjust = 0.5)
+    ) +
+    ylim(0, NA)  # Allow y-axis to scale naturally
+  
+  combined_plot <- SAR_time_series / SAR_image_series + 
+    plot_layout(guides = "collect") & theme(legend.position = "bottom")
+  
+  
+  # Save combined plot
+  ggsave(combined_plot, file = "figures/supp/SAR_combined_time_series.jpg",
+         width = 219, height = 297, units = "mm", dpi = 300)
+  
   
   #Number of SAR vessels by management plan
   n_vessels_management <- ggplot(MPA_final_vars %>% filter(SAR_presence == "SAR"), aes(x = management_plan, y = log(sum_all))) +
@@ -184,7 +222,6 @@ make_supp <- function(MPA_final_vars){
     theme_map()
   
   ggsave(EEZ_footprints_map, file = "figures/supp/EEZ_footprints_map.jpg", width = 297, height = 105, units = "mm", dpi = 300)
-  
   
   
   # Distribution of MPA sizes (area_correct) by IUCN category
@@ -818,6 +855,5 @@ make_supp <- function(MPA_final_vars){
   #          y = "AIS-derived fishing effort (log-scale)"))
   # 
   # ggsave(japan_correlation, file = "japan-correlation.jpg")
-          
   
 }
