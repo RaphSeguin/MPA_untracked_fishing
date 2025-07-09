@@ -81,12 +81,38 @@ global_map <- function(){
     theme_void() +
     theme(plot.margin = grid::unit(c(0, 0, 0, 0), "cm")) 
   
+  #Coverage of MPAs on SAR images
+  MPAs_included <- ggplot() + 
+    geom_sf(data = coastline, fill = "#F5F5F5", lwd = 0.01) +
+    geom_sf(data = eez, fill = NA, color = "black", lwd = 0.05) + 
+    geom_sf(data = mpas_all %>% sf::st_transform(crs = "ESRI:54030"), fill = "darkred", lwd = 0.05) +
+    geom_sf(data = mpa_wdpa %>% sf::st_transform(crs = "ESRI:54030"), fill = "forestgreen", lwd = 0.05) +
+    theme_map()
+  
+  #Coverage of MPAs on SAR images
+  MPAs_included <- ggplot() + 
+    geom_sf(data = coastline %>% st_transform(crs = 4326), fill = "#F5F5F5", lwd = 0.01) +
+    geom_sf(data = eez%>% st_transform(crs = 4326), fill = NA, color = "black", lwd = 0.05) + 
+    geom_sf(data = mpas_all, fill = "darkred", lwd = 0.05) +
+    geom_sf(data = mpa_wdpa, fill = "forestgreen", lwd = 0.05) +
+    theme_map()
+  
+  ggsave(MPAs_included, file = "figures/supp/MPAs_included.jpg", width = 1920 * 4, height = 1080 * 4, units = "px", dpi = 300)
+  
   ggsave(global_map, 
          file = "figures/global_map.png",
          width = 297*1.5,
          height = 105*1.5,
          dpi = 600,
          units = "mm")
+  
+  ggsave(global_map, 
+         file = "figures/global_map.png",
+         width = 1920 * 2,
+         height = 1080 * 2,
+         dpi = 600,
+         units = "px")
+  
 
   #Now create inset maps
   world_4326 <- rnaturalearth::ne_coastline(scale = "large", returnclass = "sf") 

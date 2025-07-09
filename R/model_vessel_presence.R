@@ -42,7 +42,7 @@ model_vessel_presence <- function(mpa_vessel_model){
   save(mod_spamm_binomial, file = "output/mod_spamm_binomial.Rdata")
   
   #Compute AUC
-  predicted_probs <- predict(mod_spamm_binomial, type = "response",re.form=NA)
+  predicted_probs <- predict(mod_spamm_binomial, type = "response", re.form=NA)
   roc_curve <- pROC::roc((mpa_vessel_model)$SAR_presence, predicted_probs)
   auc_value <- auc(roc_curve)
   auc_value

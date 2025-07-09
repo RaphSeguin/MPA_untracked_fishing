@@ -4,8 +4,8 @@
 
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(
-  tidyverse, here, lme4, broom, tidymodels, parallel, cowplot, ggspatial, sf, 
-  RColorBrewer, ggridges, plotly, heatmaply, parsedate, birk, ggthemes, MASS, 
+  tidyverse, here, lme4, broom, tidymodels, parallel, cowplot, ggspatial, sf, ggmap,
+  RColorBrewer, ggridges, plotly, heatmaply, parsedate, birk, ggthemes, MASS, magick, grid, gridExtra,
   automap, pbmcapply, janitor, gfwr, arrow, beepr, sfarrow, corrplot, DHARMa, 
   harrypotter, wesanderson, ranger, missForest, countrycode, ggpubr, data.table, 
   randomForestExplainer, spatialRF, spaMM, glmmTMB, performance, spdep, rstatix, 
@@ -48,7 +48,7 @@ SAR_footprints <- load_SAR_footprints()
 my_custom_theme <- function() {
   theme_minimal(base_size = 20) +
     theme(
-      text = element_text(family = "Times New Roman"),
+      text = element_text(family = "National"),
       plot.title = element_text(size = 25, face = "bold", hjust = 0.5),
       axis.title = element_text(size = 18),
       axis.text = element_text(size = 18),
@@ -99,14 +99,11 @@ lonlat = cbind(lon = SAR_data$lon,lat = SAR_data$lat)
 
 #Create grid
 SAR_mpa <- st_join(SAR_data_sf %>% cbind(lonlat), mpa_wdpa,left = F) %>%
-  #replacing MPA area with REAL mpa area
-  # dplyr::select(-gis_m_area) %>%
-  # dplyr::rename(gis_m_area = "area_correct") %>%
   st_drop_geometry() %>%
   #Add year
   mutate(year = substr(timestamp, 1, 4))
 
-  #First, normalize detections by number of satellite overpasses
+#First, normalize detections by number of satellite overpasses
 SAR_footprints_sf <- st_as_sf(SAR_footprints, wkt = "footprint_wkt", crs = 4326) 
 
 #Calculatre stats for EEZ
@@ -171,26 +168,6 @@ load("output/eez_no_mpa.Rdata")
 
 MPA_final_vars <- prep_data_for_analysis(SAR_stats, mpa_wdpa)
 EEZ_final_vars <- prep_eez_data_for_analysis(SAR_eez_stats, eez_no_mpa)
-
-# Calculate overall area-weighted mean
-overall_weighted_mean <- weighted.mean(EEZ_final_vars$SAR_density, 
-                                       EEZ_final_vars$eez_area, 
-                                       na.rm = TRUE)
-
-overall_mean = data.frame(iucn_cat = "Overall", weighted_mean_SAR = overall_weighted_mean)
-
-# Print overall result
-cat("Overall area-weighted mean SAR density:", overall_weighted_mean, "\n")
-
-
-result_by_category <- MPA_final_vars %>%
-  group_by(iucn_cat) %>%
-  summarize(weighted_mean_SAR = weighted.mean(SAR_density, area_correct, na.rm = TRUE)) %>%
-  rbind(overall_mean)
-
-# Print results by category
-print(result_by_category)
-
 
 #Numbers
 describe_results()

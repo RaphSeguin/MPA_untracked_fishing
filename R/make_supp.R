@@ -43,9 +43,12 @@ make_supp <- function(MPA_final_vars){
   SAR_footprints_sf_union <- st_read("data/study_area_clean.shp")
   
   SAR_footprints_map <- ggplot() + 
-    geom_sf(data = world %>% st_transform(crs = 4326), fill = "lightgrey") + 
     geom_sf(data = SAR_footprints_sf_union, fill = "lightblue") +
+    geom_sf(data = eez, fill = NA, color = "black", lwd = 0.06) + 
+    geom_sf(data = world %>% st_transform(crs = 4326), fill = "lightgrey") + 
     theme_map()
+  
+  ggsave(SAR_footprints_map, file = "figures/supp/SAR_footprints_map.jpg", width = 1920*2, height = 1080*2, units = "px", dpi = 300)
   
   ggsave(SAR_footprints_map, file = "figures/supp/SAR_footprints_map.jpg", width = 297, height = 105, units = "mm", dpi = 300)
   

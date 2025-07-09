@@ -62,6 +62,8 @@ plot_effects <- function(){
       title = "Effect of IUCN Category on fishing vessel detections"
     )) 
     
+  ggsave(fig_3_A, file = "figures/fig_3_A_proba.jpg", width = 1920 *2 , height = 1080 *2 , units = "px", dpi = 300)
+  
   ggsave(fig_3_A, file = "figures/fig_3_A_proba.jpg", width = 210 *2 , height = 92 *2 , units = "mm", dpi = 300)
   
   ggsave(fig_3_A, file = "figures/fig_3_A.svg", width = 18.3*2 , height =  8.6 * 2 , units = "cm")
@@ -110,7 +112,7 @@ plot_effects <- function(){
       coord_flip() +
       theme_minimal(base_size = 20) +
       theme(
-        text = element_text(family = "Times New Roman"),
+        text = element_text(family = "National"),
         plot.title = element_text(size = 25, face = "bold", hjust = 0.5),
         axis.title = element_text(size = 16),
         axis.text = element_text(size = 16),
@@ -143,7 +145,6 @@ plot_effects <- function(){
                                   sd_chl = "Primary productivy (SD)",
                                   mean_chl = "Primary productivity",
                                   marine2 = "Fully marine MPA")) +
-      theme(legend.position = "bottom", legend.box = "vertical") +
       guides(shape = guide_legend(order = 1), 
              colour = guide_legend(order = 2))) 
   
@@ -181,6 +182,13 @@ plot_effects <- function(){
          width = 210 *2 , height = 92 *2 ,
          units = "mm", 
          dpi = 300)
+  
+  ggsave(coefficient_plot, 
+         file = "figures/coefficient_plot_proba.pdf", 
+         width = 1920 *2 , height = 1080 *2 ,
+         units = "px", 
+         dpi = 300)
+  
   
   ggsave(coefficient_plot, 
          file = "figures/coefficient_plot.svg",  width = 18.3*2 , height =  8.6 * 2 , units = "cm")

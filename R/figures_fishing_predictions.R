@@ -70,10 +70,10 @@ figures_fishing_predictions <- function(mpa_model,
     geom_smooth(aes(x = log(SAR_matched_all), y = log(AIS_fishing_all), color = "Tracked vs AIS"), 
                 method = "lm", se = F, size = 1.5) +
     
-    geom_point(aes(x = log(SAR_all), y = log(predicted_fishing_all), color = "Tracked and untracked vs Predicted"), 
-               alpha = 0.5, size = 1) +
-    geom_smooth(aes(x = log(SAR_all), y = log(predicted_fishing_all), color = "Tracked and untracked vs Predicted"), 
-                method = "lm", se = F, size = 1.5) +
+    # geom_point(aes(x = log(SAR_all), y = log(predicted_fishing_all), color = "Tracked and untracked vs Predicted"), 
+    #            alpha = 0.5, size = 1) +
+    # geom_smooth(aes(x = log(SAR_all), y = log(predicted_fishing_all), color = "Tracked and untracked vs Predicted"), 
+    #             method = "lm", se = F, size = 1.5) +
     scale_color_manual(values = c("Tracked vs AIS" = "#E28A2A", "Tracked and untracked vs Predicted" = "#384B6A")) +
     labs(x = "Vessel detections (log-scale)", y = "Fishing effort - log(hours)", 
          color = "Type") +
@@ -90,8 +90,11 @@ figures_fishing_predictions <- function(mpa_model,
           panel.border = element_blank(),
           axis.line = element_line(color = "gray70"))
   
+  
   # Save figures
   ggsave("figures/correlation_plot.jpg", plot = correlation, width = 148.5 * 1.5 , height = 105 * 1.5, units = "mm", dpi = 600)
+  
+  ggsave("figures/correlation_plot.jpg", plot = correlation, width = 1920*4, height = 1080*4, units = "px", dpi = 600)
   
   ggsave("figures/correlation.svg", plot = correlation, width = 18.3 , height =  8.6 * 2, units = "cm")
   

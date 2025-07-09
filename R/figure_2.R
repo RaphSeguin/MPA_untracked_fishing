@@ -83,39 +83,10 @@ figure_2 <- function(SAR_stats){
          height = 8.6 * 2 ,
          units = "cm")
   
-  #Fig 2B
-  fraction_vessels_in_EEZ_plot <- SAR_eez_stats %>%
-    distinct(unique_id, .keep_all = T) %>%
-    dplyr::mutate(type = "outside_mpa") %>%
-    dplyr::rename(parent_iso = "ISO_TER1",
-                  normalized_detection = "normalized_detection_EEZ") %>%
-    bind_rows(SAR_stats %>% mutate(type = "inside_mpa") %>% distinct(unique_id, .keep_all = T)) %>%
-    #Group by type and parent_iso
-    group_by(type, parent_iso) %>%
-    reframe(sum_country = sum(normalized_detection)) %>%
-    ungroup() %>%
-    pivot_wider(names_from = "type",values_from="sum_country") %>%
-    mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>%
-    mutate(sum_country = inside_mpa + outside_mpa,
-           fraction_country = inside_mpa/(outside_mpa+inside_mpa)) %>%
-    filter(sum_country > 1) %>%
-    arrange(-fraction_country) %>%
-    filter(!parent_iso %in% c("FRA;ITA;MCO","NLD;DEU;DNK","SYC")) %>%
-    slice(1:20) %>%
-    mutate(country = countrycode(parent_iso,origin="iso3c",destination="country.name")) %>%
-    pivot_longer(cols = c("outside_mpa","inside_mpa")) %>%
-    ggplot() +
-    geom_bar(aes(reorder(country,-value), value, fill = name),stat="identity") +
-    scale_fill_hp_d(option="Ravenclaw",labels = c("inside_mpa" = "Inside MPAs", "outside_mpa"="Outside MPAs"))+
-    labs(title = "B",
-         x = " ",
-         y = "Number of detections inside EEZ",
-         fill = "Fraction of fishing vessels detected: ") +
-    my_custom_theme() +
-    theme(legend.position = "bottom") +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-    theme(plot.title = element_text(hjust = 0, face = "bold", size = 25))
+  ratio_iucn <- MPA_final_vars %>%
+    filter(!is.na(unmatched_ratio))
   
+  truc <- ratio_iucn %>% filter(iucn_cat == "I")
   
   #Fig 2C
   (ratio_iucn <- MPA_final_vars %>%
@@ -143,6 +114,7 @@ figure_2 <- function(SAR_stats){
   #Fig 2D
   #Matched vs unmatched cor
   (matched_unmatched_cor <- MPA_final_vars %>% 
+      filter(sum_all > 0) %>%
     ggplot(aes(log(fishing), log(unmatched_fishing),size = area_correct,fill = iucn_cat)) +
     geom_point(alpha = 0.5,shape=21, color="black") +
     scale_size(range = c(.5, 20), name="MPA area (km2)", guide = "none") + 
