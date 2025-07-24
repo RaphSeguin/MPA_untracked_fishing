@@ -33,4 +33,25 @@ To download or find information about the data used in this study and its limita
 - Boundaries of self declared marine protected areas can be found and downloaded on the World Database on Protected Areas @ https://www.protectedplanet.net/en/thematic-areas/wdpa?tab=WDPA
 - All covariates used in the model can be downloaded following the links in the supplementary materials of the study
 
-## 
+## Limitations
+
+## Limitations of Sentinel‑1 SAR Vessel Dataset
+
+- **Incomplete global coverage**  
+  Data only includes areas **sampled by Sentinel‑1 images**,so only coastal areas, meaning we miss most remote MPAs :contentReference[oaicite:1]{index=1}.
+
+- **Minimum vessel size threshold**  
+  Reliable detection starts at vessels around **15 m in length** due to the resolutions of Sentinel-1 images :contentReference[oaicite:3]{index=3}.
+  
+- **Scene edge and shoreline buffering**  
+  Detection areas exclude a **500 m buffer from scene edges** and a **1 km buffer from shorelines**, leading to potential under-sampling near land :contentReference[oaicite:4]{index=4}.
+
+- **Lack of vessel identity & attributes**  
+  SAR captures only size, location, and orientation. It **cannot provide vessel ID, flag, gear type, or activity**, so these must be inferred :contentReference[oaicite:5]{index=5}.
+
+- **AIS matching uncertainty**  
+  Matching SAR detections to AIS tracks is probabilistic and **error-prone**—some vessel identities may be missed or mismatched :contentReference[oaicite:6]{index=6}.
+
+- **Fishing classification errors**  
+  Deep-learning models classify vessel detections as probable fishing vessels but **false positives/negatives occur**, especially in areas with high vessel density (commercial routes) or marine infrastructure. We therefore use a conservative threshold of fishing vessel classifications, keeping only vessels with a probablity of being a fishing vessel of 90% or higher. :contentReference[oaicite:7]{index=7}. 
+
