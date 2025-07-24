@@ -19,9 +19,11 @@ The code here reproduces:
 
 ## Repository Structure
 
-├── R/ #All functions and code used in the analysis.
-└── README.md.
-└── make.R #Main script from which all functions are called 
+```
+├── R/          # All functions and code used in the analysis
+├── README.md   # Project description
+└── make.R      # Main script from which all functions are called
+```
 
 ## Data requirements
 
