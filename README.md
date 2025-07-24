@@ -44,12 +44,9 @@ To download or find information about the data used in this study and its limita
 - **Scene edge and shoreline buffering**  
   Detection areas exclude a **500 m buffer from scene edges** and a **1 km buffer from shorelines**, leading to potential under-sampling near land.
 
-- **Lack of vessel identity & attributes**  
-  SAR captures only size, location, and orientation. It **cannot provide vessel ID, flag, gear type, or activity**, so these must be inferred.
-  
 - **AIS matching uncertainty**  
   Matching SAR detections to AIS tracks is probabilistic and **error-prone**—some vessel identities may be missed or mismatched.
   
 - **Fishing classification errors**  
-  Deep-learning models classify vessel detections as probable fishing vessels but **false positives/negatives occur**, especially in areas with high vessel density (commercial routes) or marine infrastructure. We therefore use a conservative threshold of fishing vessel classifications, keeping only vessels with a probablity of being a fishing vessel of 90% or higher.
+  SAR vessel detections which are untracked **cannot provide vessel ID, flag, gear type, or activity**. Global Fishing Watch classify vessel detections as probable fishing vessels but **false positives/negatives occur**, especially in areas with high vessel density (commercial routes) or marine infrastructure. We therefore use a conservative threshold of fishing vessel classifications, keeping only vessels with a probablity of being a fishing vessel of 90% or higher.
 
