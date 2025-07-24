@@ -1,6 +1,5 @@
 make_supp <- function(MPA_final_vars){
   
-  #A CASER
   nrow(MPA_covariates)/nrow(mpas_all)
   
   #Figures on proportion of MPAs included
@@ -433,7 +432,7 @@ make_supp <- function(MPA_final_vars){
   
   
   #Fraction of SAR vessel in MPAs per EEZ
-  SAR_eez_stats %>%
+  truc <- SAR_eez_stats %>%
     distinct(unique_id, .keep_all = T) %>%
     dplyr::mutate(type = "outside_mpa") %>%
     dplyr::rename(parent_iso = "ISO_TER1",
@@ -842,21 +841,5 @@ make_supp <- function(MPA_final_vars){
   
   # Save as CSV file
   write.csv(covariate_summary, "figures/supp/covariate_summary.csv", row.names = FALSE)
-  
-  # #Show to reviewer
-  # MPA_corr_iucn <- MPA_covariates %>%
-  #   mutate(AIS_fishing_all = AIS_fishing_2022 + AIS_fishing_2023 + AIS_fishing_2024,
-  #          SAR_all = fishing_2022 + fishing_2023 + fishing_2024) %>%
-  #   filter(AIS_fishing_all > 0) %>%
-  #   filter(SAR_all > 0) %>%
-  #   filter(parent_iso == "BEL")  
-  # 
-  # (japan_correlation <- ggplot(MPA_corr_iucn, aes(log(SAR_all), log(AIS_fishing_all))) + 
-  #   geom_point() + 
-  #   my_custom_theme()+
-  #     labs(x = "Number of vessel detections (log-scale)",
-  #          y = "AIS-derived fishing effort (log-scale)"))
-  # 
-  # ggsave(japan_correlation, file = "japan-correlation.jpg")
   
 }

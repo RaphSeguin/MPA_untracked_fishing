@@ -69,11 +69,6 @@ figures_fishing_predictions <- function(mpa_model,
                alpha = 0.5, size = 1) +
     geom_smooth(aes(x = log(SAR_matched_all), y = log(AIS_fishing_all), color = "Tracked vs AIS"), 
                 method = "lm", se = F, size = 1.5) +
-    
-    # geom_point(aes(x = log(SAR_all), y = log(predicted_fishing_all), color = "Tracked and untracked vs Predicted"), 
-    #            alpha = 0.5, size = 1) +
-    # geom_smooth(aes(x = log(SAR_all), y = log(predicted_fishing_all), color = "Tracked and untracked vs Predicted"), 
-    #             method = "lm", se = F, size = 1.5) +
     scale_color_manual(values = c("Tracked vs AIS" = "#E28A2A", "Tracked and untracked vs Predicted" = "#384B6A")) +
     labs(x = "Vessel detections (log-scale)", y = "Fishing effort - log(hours)", 
          color = "Type") +
@@ -313,102 +308,6 @@ figures_fishing_predictions <- function(mpa_model,
          dpi = 300)
   
   ggsave(predicted_fishing_map, file = "figures/predicted_fishing_map.svg",  width = 18.3*2 , height =  8.6 * 2 , units = "cm")
-  
-  # 
-  # # Combine data
-  # dorl2 <- tibble(dorl,X=centr[,1],Y=centr[,2])%>%
-  #   arrange(-predicted_fishing) %>%
-  #   mutate(ratio_fishing = observed_fishing/predicted_fishing,
-  #          ratio_unseen_fishing = difference_fishing/predicted_fishing) %>%
-  #   mutate(rad_fishing=sqrt(rad*rad*ratio_fishing),
-  #          rad_unseen = sqrt(rad*rad*ratio_unseen_fishing))
-  # 
-  # col_fish <- "#E28A2A"
-  # col_unseen <- "#384B6A"
-  # 
-  # circleFun <- function(
-  #   center=c(0,0),   # center of the circle 
-  #   diameter=1,      # diameter 
-  #   npoints=100,     # number of points to draw the circle
-  #   start=0, end=2   # start point/end point
-  # ){
-  #   tt <- seq(start*pi, end*pi, length.out=npoints)
-  #   tb <- tibble(
-  #     x = center[1] + diameter / 2 * cos(tt), 
-  #     y = center[2] + diameter / 2 * sin(tt)
-  #   )
-  #   return(tb)
-  # }
-  # 
-  # # Half circle for crops
-  # half_fish <- bind_cols(
-  #   LME_NAME = rep(dorl2$LME_NAME[1],100),
-  #   circleFun(
-  #     c(dorl2$X[1],dorl2$Y[1]),dorl2$rad_fishing[1]*2, start=1.5, end=2.5
-  #   ))
-  # 
-  # # Half circle for grass
-  # half_unseen <- bind_cols(
-  #   LME_NAME = rep(dorl2$LME_NAME[1],100),
-  #   circleFun(
-  #     c(dorl2$X[1],dorl2$Y[1]),dorl2$rad_unseen[1]*2, start=0.5, end=1.5
-  #   ))
-  # 
-  # # Make loop for all countries
-  # for (i in 2:dim(dorl2)[1]){
-  #   
-  #   # Draw for crops
-  #   temp_fish <- bind_cols(
-  #     LME_NAME = rep(dorl2$LME_NAME[i],100),
-  #     circleFun(
-  #       c(dorl2$X[i],dorl2$Y[i]),dorl2$rad_fishing[i]*2, start=1.5, end=2.5
-  #     ))
-  #   # Draw for grass
-  #   temp_unseen <- bind_cols(
-  #     LME_NAME = rep(dorl2$LME_NAME[i],100),
-  #     circleFun(
-  #       c(dorl2$X[i],dorl2$Y[i]),dorl2$rad_unseen[i]*2, start=0.5, end=1.5
-  #     ))
-  #   
-  #   half_fish<-half_fish%>%
-  #     bind_rows(temp_fish)
-  #   
-  #   half_unseen<-half_unseen%>%
-  #     bind_rows(temp_unseen)
-  # }
-  # 
-  # predicted_fishing_map <- ggplot()+
-  #   # World basemap
-  #   geom_sf(
-  #     world,mapping=aes(geometry=geometry),
-  #     fill="#1A1A1A",color=alpha("dimgrey",0.25)
-  #   )+
-  #   # Draw Dorling cartogram with geom_circle()
-  #   ggforce::geom_circle(
-  #     data = dorl2, aes(x0 = X, y0 = Y, r = rad),
-  #     fill=alpha("dimgrey",0.75),color=alpha("white",0.2)
-  #   )+
-  #   # Draw half circle for crop with geom_polygon
-  #   geom_polygon(
-  #     half_fish,
-  #     mapping=aes(x,y,group=LME_NAME),
-  #     fill=col_fish,color=NA
-  #   )+ 
-  #   # Draw half circle for grass with geom_polygon
-  #   geom_polygon(
-  #     half_unseen,
-  #     mapping=aes(x,y,group=LME_NAME),
-  #     fill=col_unseen,color=NA
-  #   )+ 
-  #   theme_custom
-  # 
-  # ggsave(predicted_fishing_map, file = "figures/predicted_fishing_map.jpg",
-  #        width = 210,  # A4 width in mm
-  #        height = 148.5,  # Half of A4 height in mm
-  #        units = "mm", 
-  #        dpi = 300)
-  # 
-  # ggsave(predicted_fishing_map, file = "figures/predicted_fishing_map.svg",  width = 18.3*2 , height =  8.6 * 2 , units = "cm")
 
   #For Figure 5
   ggsave(predicted_fishing_map,

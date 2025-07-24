@@ -32,24 +32,10 @@ plot_effects <- function(){
   load("output/mod_spamm.Rdata")
   load("output/mod_spamm_unmatched.Rdata")
   
-  # vis_iucn <- visreg(mod_spamm_binomial, "iucn_cat", scale = "response", plot = FALSE)
-  
-  # Convert to a dataframe
-  # vis_iucn_df <- vis_iucn$fit %>%
-  #   rename(iucn_cat = vis_iucn$meta$x, predicted_prob = visregFit, lower = visregLwr, upper = visregUpr) %>%
-  #   mutate(predicted_prob = predicted_prob * 100)
-  
   #Predicted probabilities of model
   probs_presence <- predict(mod_spamm_binomial, mpa_vessel_model)
   mpa_vessel_model$probs <- probs_presence * 100
   
-  # Calculate the weighted average for each IUCN category
-  # weighted_avg_by_iucn <- mpa_vessel_model %>%
-  #   group_by(iucn_cat) %>%
-  #   summarise(
-  #     weighted_avg = weighted.mean(probs, area_correct, na.rm = TRUE)
-  #   )
-  # 
   # 
   # Now plot the boxplot and add the red dots for the spatially weighted averages
   (fig_3_A <- ggplot(mpa_vessel_model, aes(factor(iucn_cat, level = level_order), probs, fill = iucn_cat)) + 
@@ -75,25 +61,16 @@ plot_effects <- function(){
   mod_spamm_effects <- mod_spamm_effects %>%
     clean_names() %>%
     as.data.frame() %>%
-    mutate(significance = ifelse(t_value < -1.96 & p_value <0.01 |t_value > 1.96 & p_value < 0.01,"Significant","Not Significant")) %>%
+    mutate(significance = ifelse(t_value < -1.96 |t_value > 1.96,"Significant","Not Significant")) %>%
     rownames_to_column("term") %>%
     mutate(model = "Vessel detections")
-  
-  # mod_spamm_unmatched_effects <- summary(mod_spamm_unmatched, details = list(p_value = TRUE))$beta_table
-  
-  # mod_spamm_unmatched_effects <- mod_spamm_unmatched_effects %>%
-  #   clean_names() %>%
-  #   as.data.frame() %>%
-  #   mutate(significance = ifelse(t_value < -1.96 & p_value < 0.01 |t_value > 1.96 & p_value < 0.01,"Significant","Not Significant")) %>%
-  #   rownames_to_column("term") %>%
-  #   mutate(model = "Untracked vessel detections")
   # 
   mod_spamm_binomial_effects <- summary(mod_spamm_binomial,  details = list(p_value = TRUE))$beta_table
   
   mod_spamm_binomial_effects <- mod_spamm_binomial_effects %>%
     clean_names() %>%
     as.data.frame() %>%
-    mutate(significance = ifelse(t_value < -1.96 & p_value <0.01 |t_value > 1.96 & p_value < 0.01,"Significant","Not Significant")) %>%
+    mutate(significance = ifelse(t_value < -1.96 |t_value > 1.96,"Significant","Not Significant")) %>%
     rownames_to_column("term") %>%
     mutate(model = "Vessel presence")
   
@@ -106,13 +83,12 @@ plot_effects <- function(){
       scale_color_hp_d(option = "Ravenclaw") +
       labs(title = "t-values of both models",
            color = "Model type",
-           shape = "Significance (t < -1.96 or > 1.96 and p < 0.01)",
+           shape = "Significance (t < -1.96 or > 1.96)",
            x = "",
            y = "t-value") +
       coord_flip() +
       theme_minimal(base_size = 20) +
       theme(
-        text = element_text(family = "National"),
         plot.title = element_text(size = 25, face = "bold", hjust = 0.5),
         axis.title = element_text(size = 16),
         axis.text = element_text(size = 16),
@@ -161,20 +137,6 @@ plot_effects <- function(){
          color = "IUCN Category",
          title = "Response: Vessel detections")
   
-  # partial_iucn_cat_unmatched <-  visreg(mod_spamm_unmatched,"travel_time",type="conditional",by="iucn_cat")$fit 
-  # 
-  # partial_iucn_cat_unmatched_plot <- ggplot(partial_iucn_cat_unmatched) +
-  #   geom_line(aes(travel_time,visregFit,color = iucn_cat)) +
-  #   scale_color_manual(values = legend,breaks =c('I','II', 'III',"IV","V","VI","Not Applicable","Not Assigned","Not Reported","EEZ"))  + 
-  #   theme_minimal(base_size = 14) +
-  #   theme(legend.position = "bottom") +
-  #   labs(x = "Travel time to the nearest city - log scale",
-  #        y = "Fitted coefficients",
-  #        color = "IUCN Category",
-  #        title = "Response: Untracked vessel detections")
-  
-  # iucn_cats <- ggarrange(partial_iucn_cat_plot,partial_iucn_cat_unmatched_plot+ rremove("ylab"),nrow = 1, common.legend=T,legend="bottom")
-  # iucn_cats <-  annotate_figure(iucn_cats, top = text_grob("Effect of IUCN category on the density of vessel detections by travel time", face = "bold", size = 16))
   # 
   # Save coefficient_plot to fill half of an A4 page
   ggsave(coefficient_plot, 

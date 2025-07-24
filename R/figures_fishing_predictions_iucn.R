@@ -141,7 +141,5 @@ figures_fishing_predictions_iucn <- function(mpa_model,
     my_custom_theme() +
     theme(legend.position = "bottom")
   
-
-  
   ggsave(percentage_increase_fishing, file = "figures/supp/percentage_increase_fishing.svg", width = 297, height = 210, units = "mm", dpi = 300)
 }

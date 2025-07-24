@@ -32,8 +32,7 @@ plot_and_save_partial_effects <- function(model, data, model_name) {
     rownames_to_column("Variable") %>%
     clean_names() %>%
     filter(variable != "(Intercept)") %>%  # Exclude the intercept
-    filter(t_value < -1.96 | t_value > 1.96) %>%
-    filter(p_value < 0.01)# Select variables with t-value < -1.96 or > 1.96
+    filter(t_value < -1.96 | t_value > 1.96)
   
   # Adjust IUCN categories to a single variable "iucn_cat"
   model_summary <- model_summary %>%
