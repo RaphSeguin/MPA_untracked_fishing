@@ -2,8 +2,7 @@
 
 This repository contains the code and workflows used for the analyses and figures presented in the paper:
      
-Raphael Seguin et al., Global patterns and drivers of untracked industrial fishing in coastal marine protected areas.Science389,396-401(2025).
-DOI: 10.1126/science.ado9468
+Raphael Seguin et al., Global patterns and drivers of untracked industrial fishing in coastal marine protected areas. Science389,396-401(2025). DOI: 10.1126/science.ado9468
 
 https://www.science.org/doi/10.1126/science.ado9468
 
